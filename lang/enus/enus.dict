@@ -1178,7 +1178,6 @@ dictionary pnames1 statement 1 width 0 records sound
   adolf 255 255 26 says e d a l f
   adolph 255 255 27 says e d c l f
   adonis 255 255 28 says A d a n X s
-  address 255 255 19 says A d r E s
   adler 255 255 24 says A d l x r
   adm 255 255 25 says A d m I n I s t r e S x n
   adriatic 255 255 29 says e d r i A t X k
@@ -3144,7 +3143,6 @@ dictionary pnames4 statement 1 width 0 records sound
   perpich 255 255 295 says p R p X k
   perrier 255 255 296 says p E r i e
   persephone 255 255 297 says p x r s E f x n i
-  persona 255 255 298 says p R s o n a
   pesci 255 255 299 says p E S i
   peshawar 255 255 300 says p E S x w a r
   petit 255 255 301 says p x t i t
@@ -3238,7 +3236,6 @@ dictionary pnames4 statement 1 width 0 records sound
   qantas 255 255 391 says k w a@ n t x s
   qatar 255 255 392 says k x t a r
   quaeda 255 255 393 says k e F x
-  quality 255 255 395 says k w a l x t i
   qualcomm 255 255 394 says k w a l k a m
   quandary 255 255 396 says k w a@ n d R i
   quarles 255 255 397 says k w c r l E s
@@ -3832,7 +3829,6 @@ dictionary pnames5 statement 1 width 0 records sound
   villalobos 255 255 414 says v i l a l o b o z
   villanueva 255 255 415 says v i l a n w E v x
   vineland 255 255 416 says v Y n l x n d
-  visual 255 255 417 says v I Z x w x l
   vitale 255 255 418 says v X t A l i
   vitaly 255 255 419 says v x t A l i
   viva 255 255 420 says v i v x
