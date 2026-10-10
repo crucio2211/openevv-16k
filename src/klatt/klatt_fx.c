@@ -351,21 +351,23 @@ uint64_t fx_isqrt(uint64_t v)
  * than by the arithmetic coming out to unity. That is deliberate: it is what
  * keeps every recorded case byte for byte what it was.
  *
- * EVV_NOISE=flat asks for the old behaviour at any rate, which is what the
- * two are measured against. */
+ * Off unless asked for: the wide rates keep their noise open to the whole
+ * band, which is the sound from before the shaping was put back.
+ * EVV_NOISE=shaped brings it back for comparison. The wideband companion
+ * sets its own edge explicitly and is unaffected by this default. */
 
 #define NOISE_BAND 5512
 
 static int noise_shaping(void)
 {
-    static int decided, on = 1;
+    static int decided, on = 0;
 
     if (!decided) {
         const char *say = getenv("EVV_NOISE");
 
         decided = 1;
-        if (say != 0 && strcmp(say, "flat") == 0)
-            on = 0;
+        if (say != 0 && strcmp(say, "shaped") == 0)
+            on = 1;
     }
     return on;
 }
