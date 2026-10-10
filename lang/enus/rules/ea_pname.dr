@@ -7873,10 +7873,10 @@ label L344 was $X346$106217
   jump to L4
 label L345 was $X347$106218
   store movb imm 3 slot 100
-  load movl sym string_1973 into r6
+  load movl sym string_2724 into r6
   jump to L5
 label L346 was $X348$106219
-  load movl sym string_1974 into r6
+  load movl sym string_2725 into r6
   jump to L580
 label L347 was $X349$106220
   load movl sym string_1975 into r6
