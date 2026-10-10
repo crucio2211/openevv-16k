@@ -1,0 +1,58 @@
+name: Windows DLLs dict-only revert (all languages)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Checkout tree (patches already migrated in)
+        uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq mingw-w64 python3 zip
+
+      - name: Build eci.dll 64-bit (RULES=c, all languages)
+        run: |
+          set -eux
+          LANGS="lang/enus lang/engb lang/eses lang/esus lang/dede lang/frfr lang/frca lang/itit lang/plpl lang/jajp"
+          make build/eci.dll RULES=c LANGS="$LANGS" -j2
+          ls -la build/eci.dll
+
+      - name: Build eci32.dll 32-bit (RULES=c, all languages)
+        run: |
+          set -eux
+          LANGS="lang/enus lang/engb lang/eses lang/esus lang/dede lang/frfr lang/frca lang/itit lang/plpl lang/jajp"
+          make build/eci32.dll RULES=c LANGS="$LANGS" -j2
+          ls -la build/eci32.dll
+
+      - name: Zip DLLs
+        run: |
+          mkdir -p out
+          cp build/eci.dll build/eci32.dll out/
+          cd out && zip -9 openevv-dict-only-dlls.zip eci.dll eci32.dll
+          ls -la
+
+      - name: Upload as GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: dict-only-${{ github.run_number }}
+          name: OpenEVV dict-only revert (run ${{ github.run_number }})
+          body: |
+            Upstream + dictionary patches only (no 16kHz/wideband merge):
+            - hetero: quality, persona, address (+ plurals), jose
+            - punct: bare marks removed from eng_char_name
+            - poor/poors small-u, visual removed, hetero names dropped
+            Files: eci.dll (64-bit), eci32.dll (32-bit)
+          files: out/openevv-dict-only-dlls.zip
+          draft: false
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
