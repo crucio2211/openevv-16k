@@ -431,48 +431,8 @@ class SynthDriver(SynthDriver):
 			engine.control([(engine.selectLanguage, (home, self._presetNow()))])
 
 	def _processText(self, text):
-		"""Normalize text before the engine; keep !/? for intonation.
-
-		Commercial Eloquence (Android libEloquenceENU.so / ENU.syn) runs
-		exclam_phrase / question_phrase when the tokenizer sees sentence-final
-		! or ?. OpenEVV has the same rules (ut_inton.dr), but NVDA or
-		fullwidth forms can hide the cue. We:
-		  1) Map fullwidth / variant marks to ASCII ! and ?
-		  2) Leave those marks in the string (engine must see them; eng_char_name
-		     silence only affects spoken *names*, not phrase type)
-		  3) On sentence-final !, briefly raise pitch fluctuation (`vf`) so the
-		     contour is closer to Eloquence 6.1 expression — restored after.
-		"""
 		if not self._voiceTags:
 			text = text.replace("`", " ")
-		# Fullwidth / compatibility forms -> ASCII (engine rules key on ASCII)
-		text = (
-			text.replace("！", "!")
-			.replace("？", "?")
-			.replace("‼", "!!")
-			.replace("⁇", "??")
-			.replace("⁉", "!?")
-			.replace("⁈", "?!")
-		)
-		# Stronger expression on exclamatory sentences (driver-side; no DLL rebuild)
-		# `vf` = voice fluctuation / inflection annotation (eci_state case 8).
-		if "!" in text:
-			try:
-				base = int(self._engine.voiceParams.get(
-					_openevv.VOICE_FLUCTUATION, 0))
-			except Exception:
-				base = 0
-			boost = min(100, max(base + 25, 40))
-			# Apply boost only through the stretch that contains !; restore after.
-			# Keep the ! characters so exclam_phrase still fires in the engine.
-			import re as _re
-			def _exclam_boost(m):
-				return "`vf%d %s `vf%d " % (boost, m.group(0), base)
-			text = _re.sub(
-				r"[^.?!\n]*!",
-				_exclam_boost,
-				text,
-			)
 		return text
 
 
