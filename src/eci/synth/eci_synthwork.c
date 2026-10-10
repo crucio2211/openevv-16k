@@ -19,7 +19,6 @@
 #include "eci_synththread.h"
 #include "evv_abi.h"
 #include "klatt_rates.h"
-#include "klatt_wide.h"
 #include "delta.h"
 
 #define APP_INDEX_LOST     0x06
@@ -166,7 +165,6 @@ extern THIS void rz_romClearErrors(void *r)
     MANGLED("?romClearErrors@RomanizerManager@@QAEXXZ");
 
 extern int setNativeSampleRate(delta_state *d, int32_t hz);
-extern int setWidebandSynthesis(delta_state *d, int32_t on);
 extern delta_state *ew_machine(void *engine);
 extern int32_t ev_engineHz(int32_t rate);
 
@@ -625,7 +623,6 @@ THIS int32_t stw_createAudioConverter(SynthThread *t, SampleFormat *fmt)
 {
     int32_t wanted = fmt->rate;
     int32_t native;
-    int32_t wide;
     int32_t rc = ERR_BAD_RATE;
     WaveFormat wave;
     EngCommand command;
@@ -636,10 +633,6 @@ THIS int32_t stw_createAudioConverter(SynthThread *t, SampleFormat *fmt)
     native = ev_engineHz(wanted);
     if (native == 0)
         return ERR_BAD_RATE;
-
-    wide = ST_WIDEBAND(t) && native == RATE_11025 && wanted > RATE_11025;
-    if (wide)
-        native = WIDE_RATE;
 
     if (native == wanted) {
         /* Nothing to convert, so anything already standing in the way is
@@ -683,12 +676,10 @@ THIS int32_t stw_createAudioConverter(SynthThread *t, SampleFormat *fmt)
            and eleven thousand and twenty five want: they are the two the
            rules can name, and letting them name it keeps that path exactly
            IBM's. */
-        if (rc == OK) {
+        if (rc == OK)
             setNativeSampleRate(ew_machine(ST_ENGINE(t)),
-                                (wide || native == RATE_8000
-                                 || native == RATE_11025) ? 0 : native);
-            setWidebandSynthesis(ew_machine(ST_ENGINE(t)), wide);
-        }
+                                (native == RATE_8000 || native == RATE_11025)
+                                ? 0 : native);
 
         if (rc == OK) {
             SampleFormat *kept = ST_FORMAT(t);

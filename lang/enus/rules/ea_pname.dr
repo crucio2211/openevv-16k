@@ -1521,8 +1521,8 @@ label L399 was $X392$102657
   load movl sym string_388 into r6
   jump to L582
 label L400 was $X393$102658
-  store movb imm 7 slot 100
-  load movl sym string_389 into r6
+  store movb imm 8 slot 100
+  load movl sym string_2722 into r6
   jump to L593
 label L401 was $X394$102659
   load movl sym string_390 into r6
@@ -7402,7 +7402,7 @@ label L209 was $X212$106083
   jump to L4
 label L210 was $X213$106084
   store movb imm 4 slot 100
-  load movl sym string_1843 into r6
+  load movl sym string_2723 into r6
   jump to L4
 label L211 was $X214$106085
   store movb imm 7 slot 100
@@ -7873,10 +7873,10 @@ label L344 was $X346$106217
   jump to L4
 label L345 was $X347$106218
   store movb imm 3 slot 100
-  load movl sym string_2722 into r6
+  load movl sym string_2724 into r6
   jump to L5
 label L346 was $X348$106219
-  load movl sym string_2723 into r6
+  load movl sym string_2725 into r6
   jump to L580
 label L347 was $X349$106220
   load movl sym string_1975 into r6

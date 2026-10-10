@@ -193,9 +193,6 @@ class Rule:
         # nothing about the compilation and everything about what may be
         # asked of it afterwards; `declarations' says what.
         self.afresh = False
-        # Written instead of IBM's rule of the same name, on purpose, so that
-        # it says what IBM's did not; `declarations' says what follows.
-        self.instead = False
         self.sizes = {}
         self.at = FIXED
         self.body = []
@@ -291,17 +288,6 @@ def declarations(words, i, r):
             # is left out of that comparison and held by the audio there, and
             # by test/words.sh and test/matrix.sh outside it.
             r.afresh = True
-        elif head == "instead":
-            # Written afresh and meant to read differently from the rule of
-            # IBM's it replaces: one lifted from ETI Eloquence 6.1 is that.
-            # Nothing can hold it against IBM's, and holding it there would
-            # turn the check red for the difference it was taken to make and
-            # leave it red, so tools/rules/check-upper.sh builds IBM's side
-            # with it as well, as it does a rule that stands in for nothing,
-            # and goes on holding the rest. test/matrix.sh, test/words.sh and
-            # test/harness/eti.sh are what hold it.
-            r.afresh = True
-            r.instead = True
         else:
             return i
         i += 1
@@ -554,12 +540,8 @@ class Compiler:
                 fault(where, "a set says `set <place> to <value>'")
             src, sw, ssigned = self.value(where, w)
             if sw < width:
-                # Widened the way the value says, signed or not, which is
-                # what a rule lifted from 6.1 needs: its compiler loads a
-                # half with movzwl or movswl into a register that is a word.
-                # r0 is left alone, since it may be the answer still.
-                self.op("load", WIDEN[(sw, ssigned)], src, "%ecx")
-                src = ("reg", "%ecx")
+                fault(where, "a %d byte value will not fill %d bytes"
+                      % (sw, width))
             self.op("store", MOVE[width], src, place)
 
         elif head in ("add", "subtract", "and", "or", "shift"):

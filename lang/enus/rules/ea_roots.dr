@@ -3458,8 +3458,8 @@ label L63 was $X55$102254
   load movl sym string_762 into r6
   jump to L4
 label L64 was $X56$102255
-  store movb imm 7 slot 104
-  load movl sym string_763 into r6
+  store movb imm 6 slot 104
+  load movl sym string_1052 into r6
   jump to L139
 label L65 was $X57$102256
   store movb imm 9 slot 104

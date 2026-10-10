@@ -562,7 +562,6 @@ dictionary homog_roots statement 1 width 0 records sound
   puerile 255 255 36 says p y u r x l
   putting 255 255 37 says p U t I G or p H t I G
   princess 255 255 34 says p r I n s X s
-  produce 255 255 35 says p r o d u s or p r Xx d u s
   ragged 255 255 38 says r A g d or r A g X d
   read 255 255 39 says r i d
   rein 255 255 41 says r e n
@@ -1533,7 +1532,7 @@ dictionary pnames1 statement 1 width 0 records sound
   canion 255 255 394 says k A n y x n
   canucks 255 255 398 says k A n U k s
   canberra 255 255 392 says k A n b E r x
-  candidate 255 255 393 says k A n x d X t
+  candidate 255 255 393 says k A n d X d e t
   cannell 255 255 395 says k A n x l
   cannes 255 255 396 says k a n
   canseco 255 255 397 says k a n s e k o
@@ -2904,7 +2903,7 @@ dictionary pnames4 statement 1 width 0 records sound
   oneill 255 255 210 says o n i l
   ont 255 255 211 says a n t e r i o
   opel 255 255 212 says o p x l
-  open 255 255 213 says o p x n
+  open 255 255 213 says o p X n
   openwave 255 255 214 says o p x n w e v
   oral 255 255 215 says o r x l
   orestes 255 255 216 says c r E s t i z
@@ -3222,7 +3221,6 @@ dictionary pnames4 statement 1 width 0 records sound
   previn 255 255 367 says p r E v x n
   prima 255 255 368 says p r i m a
   principe 255 255 369 says p r I n s x p i
-  produce 255 255 370 says p r o d u s
   provencal 255 255 371 says p r a v E G k a l
   provence 255 255 372 says p r o v a n s
   prozac 255 255 373 says p r o z A k
@@ -4776,7 +4774,7 @@ dictionary roots3 statement 1 width 0 records sound
   prix 255 255 53 says p r i
   procedural 255 255 55 says p r x s i J x r x l
   procedure 255 255 54 says p r x s i J x r
-  produce 255 255 56 says p r x d y u s
+  produce 255 255 56 says p r U d u s
   prognoses 255 255 57 says p r c@ g n o s i z
   prohibition 255 255 58 says p r o X b I S Xx n
   prologue 255 255 59 says p r o l c@ g
