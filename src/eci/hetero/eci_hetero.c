@@ -84,6 +84,7 @@ static const Hetero words[] = {
     { "personas",   "`[pxrs1onxz]",        0                      },
     { "address",    "`[xdr1Es]",           0                      },
     { "addresses",  "`[xdr1Esz]",          0                      },
+    { "jose",       "`[hoz1e]",            0                      },
     { "transfer",   0,                    "`[.0trAns.1fR]"       },
     { "transfers",  0,                    "`[.0trAns.1fRz]"      },
     { "transplant", 0,                    "`[.0trAnz.1plAnt]"    },

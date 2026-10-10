@@ -238,6 +238,8 @@ class SynthDriver(SynthDriver):
 		# Translators: Label for a setting in voice settings dialog.
 		DriverSetting("samplerate", _("Sa&mple rate"), False),
 		# Translators: Label for a setting in voice settings dialog.
+		BooleanDriverSetting("wideband", _("&Wideband above 11 kHz"), False),
+		# Translators: Label for a setting in voice settings dialog.
 		DriverSetting("volumeBoost", _("Volume boos&ter"), False),
 	)
 
@@ -599,6 +601,12 @@ class SynthDriver(SynthDriver):
 			log.error("openevv: %r is not a sample rate" % (value,))
 			return
 		self._engine.control([(self._engine.setSampleRate, (hz,))])
+
+	def _get_wideband(self):
+		return self._engine.wideband
+
+	def _set_wideband(self, enable):
+		self._engine.control([(self._engine.setWideband, (enable,))])
 
 	def _get_availableVolumeboosts(self):
 		"""How much louder than the engine makes it the speech can be.
