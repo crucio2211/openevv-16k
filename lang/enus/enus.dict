@@ -1566,7 +1566,7 @@ dictionary pnames1 statement 1 width 0 records sound
   celebre 255 255 426 says s E l E b r x
   celeste 255 255 427 says s x l E s t
   celtic 255 255 428 says k E l t X k
-  celtics 255 255 575 says s E l t X k
+  celtics 255 255 575 says s E l t x k s
   centel 255 255 429 says s E n t E l
   centocor 255 255 430 says s E n t x k o r
   cerezo 255 255 431 says s R e z o
@@ -1969,7 +1969,7 @@ dictionary pnames2 statement 1 width 0 records sound
   farrell 255 255 257 says f E r X l
   faso 255 255 258 says f a s o
   fatah 255 255 259 says f a t x
-  fatima 255 255 260 says f a t I m x
+  fatima 255 255 260 says f A d X m x
   favre 255 255 261 says f a v
   fayetteville 255 255 262 says f e X t v I l
   fazio 255 255 263 says f a z i o

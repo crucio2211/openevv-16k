@@ -2201,8 +2201,8 @@ label L600 was $arm$L600
   load movl sym string_2722 into r6
   jump to L553
 label L601 was $arm$L601
-  store movb imm 6 slot 100
-  load movl sym string_2732 into r6
+  store movb imm 7 slot 100
+  load movl sym string_2733 into r6
   jump to L553
 end
 
@@ -3243,7 +3243,7 @@ label L263 was $X259$103725
   jump to L586
 label L264 was $X260$103726
   store movb imm 6 slot 100
-  load movl sym string_814 into r6
+  load movl sym string_2734 into r6
   jump to L578
 label L265 was $X261$103727
   store movb imm 3 slot 100
