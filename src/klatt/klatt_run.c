@@ -36,8 +36,6 @@
 typedef delta_state DeltaThis;
 
 #define DT_LANG(d)      EVV_AT(DeltaLang *, (d)->dlang)
-#define DL_WIDE_WANTED(l) ((l)->wide_wanted)
-#define DL_WIDE(l)        ((l)->wide)
 
 #define SD_SAMPLE_CB(v)   ((v)->sample_cb)
 #define SD_SAMPLE_DATA(v) ((v)->sample_data)
@@ -77,6 +75,8 @@ typedef delta_state DeltaThis;
 #define DL_BUILT_RATE(l)  ((l)->built_rate)
 #define DL_BUILT_EX(l)    ((l)->built_ex)
 #define DL_BUILT_CO(l)    ((l)->built_co)
+#define DL_WIDE_WANTED(l) ((l)->wide_wanted)
+#define DL_WIDE(l)        ((l)->wide)
 #define DL_BYTES          sizeof(DeltaLang)
 
 /* What the language record keeps of the last utterance: the synthesiser's
