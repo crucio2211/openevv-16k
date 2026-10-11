@@ -2201,8 +2201,8 @@ label L600 was $arm$L600
   load movl sym string_2722 into r6
   jump to L553
 label L601 was $arm$L601
-  store movb imm 7 slot 100
-  load movl sym string_2727 into r6
+  store movb imm 6 slot 100
+  load movl sym string_2732 into r6
   jump to L553
 end
 
