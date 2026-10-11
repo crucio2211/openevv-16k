@@ -637,7 +637,11 @@ THIS int32_t stw_createAudioConverter(SynthThread *t, SampleFormat *fmt)
     if (native == 0)
         return ERR_BAD_RATE;
 
-    wide = ST_WIDEBAND(t) && native == RATE_11025 && wanted > RATE_11025;
+    /* The wideband voice engages by itself for anything above sixteen
+       thousand: that is exactly where the checkbox used to engage it, since
+       sixteen thousand itself is native outright and never took the
+       companion. No setting; the rate the caller asked for decides. */
+    wide = native == RATE_11025 && wanted > RATE_16000;
     if (wide)
         native = WIDE_RATE;
 
