@@ -562,7 +562,6 @@ dictionary homog_roots statement 1 width 0 records sound
   puerile 255 255 36 says p y u r x l
   putting 255 255 37 says p U t I G or p H t I G
   princess 255 255 34 says p r I n s X s
-  produce 255 255 35 says p r o d u s or p r Xx d u s
   ragged 255 255 38 says r A g d or r A g X d
   read 255 255 39 says r i d
   rein 255 255 41 says r e n
@@ -1533,7 +1532,7 @@ dictionary pnames1 statement 1 width 0 records sound
   canion 255 255 394 says k A n y x n
   canucks 255 255 398 says k A n U k s
   canberra 255 255 392 says k A n b E r x
-  candidate 255 255 393 says k A n x d X t
+  candidate 255 255 393 says k A n d X d e t
   cannell 255 255 395 says k A n x l
   cannes 255 255 396 says k a n
   canseco 255 255 397 says k a n s e k o
@@ -2905,7 +2904,7 @@ dictionary pnames4 statement 1 width 0 records sound
   oneill 255 255 210 says o n i l
   ont 255 255 211 says a n t e r i o
   opel 255 255 212 says o p x l
-  open 255 255 213 says o p x n
+  open 255 255 213 says o p X n
   openwave 255 255 214 says o p x n w e v
   oral 255 255 215 says o r x l
   orestes 255 255 216 says c r E s t i z
@@ -3223,7 +3222,6 @@ dictionary pnames4 statement 1 width 0 records sound
   previn 255 255 367 says p r E v x n
   prima 255 255 368 says p r i m a
   principe 255 255 369 says p r I n s x p i
-  produce 255 255 370 says p r o d u s
   provencal 255 255 371 says p r a v E G k a l
   provence 255 255 372 says p r o v a n s
   prozac 255 255 373 says p r o z A k
@@ -4777,7 +4775,7 @@ dictionary roots3 statement 1 width 0 records sound
   prix 255 255 53 says p r i
   procedural 255 255 55 says p r x s i J x r x l
   procedure 255 255 54 says p r x s i J x r
-  produce 255 255 56 says p r x d y u s
+  produce 255 255 56 says p r U d u s
   prognoses 255 255 57 says p r c@ g n o s i z
   prohibition 255 255 58 says p r o X b I S Xx n
   prologue 255 255 59 says p r o l c@ g
@@ -5506,14 +5504,6 @@ dictionary eng_char_name statement 1 width 0 records characters
   8 255 255 40 says eight
   9 255 255 41 says nine
   - 255 255 11 says to or minus or dash
-  , 255 255 27 says comma
-  . 255 255 29 says dot
-  ? 255 255 32 says question[ ]mark
-  : 255 255 24 says colon
-  ; 255 255 23 says semicolon
-  ! 255 255 1 says exclamation[ ]point
-  ( 255 255 9 says left[ ]parenthesis
-  ) 255 255 10 says right[ ]parenthesis
   ' 255 255 25 says acute[ ]accent or apostrophe
   # 255 255 3 says number
   _ 255 255 12 says underscore
@@ -5521,10 +5511,6 @@ dictionary eng_char_name statement 1 width 0 records characters
   ~ 255 255 18 says tilda
   * 255 255 8 says star or asterisk
   @ 255 255 2 says at
-  [#80] 255 255 19 says left[ ]bracket
-  [#81] 255 255 21 says right[ ]bracket
-  { 255 255 20 says left[ ]brace
-  } 255 255 22 says right[ ]brace
   $ 255 255 4 says dollar
   + 255 255 14 says plus
   % 255 255 5 says percent
@@ -5536,7 +5522,6 @@ dictionary eng_char_name statement 1 width 0 records characters
   \ 255 255 15 says backslash
   < 255 255 28 says less[ ]than
   > 255 255 30 says greater[ ]than
-  " 255 255 26 says quote
   [à] 255 255 69 says ay[ ]grahv
   [è] 255 255 77 says ee[ ]grahv
   [ì] 255 255 81 says eye[ ]grahv
