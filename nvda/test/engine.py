@@ -290,7 +290,7 @@ def samplerate_checks():
           engine.setSampleRate(11025), True)
     check("with the engine told one", dll.params.get(mod.PARAM_SAMPLE_RATE), 1)
     check("the rates offered are the three asked for",
-          [hz for _n, hz in mod.SAMPLE_RATES], [8000, 11025, 16000])
+          [hz for _n, hz in mod.SAMPLE_RATES], [8000, 11025, 16000, 22050, 32000, 44100, 48000])
 
     engine.close()
 
