@@ -148,7 +148,6 @@ delta_language delta_lang_frca = {
     proc_main,
 
     0, 0,                /* the settings blob and its size */
-    0,                   /* settings sent only when changed */
 };
 
 void delta_lang_bind_frca(void)

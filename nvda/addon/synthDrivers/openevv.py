@@ -233,13 +233,6 @@ class SynthDriver(SynthDriver):
 		NumericDriverSetting("breathiness", _("Breathi&ness"), False),
 		# Translators: Label for a setting in voice settings dialog.
 		BooleanDriverSetting("abbreviations", _("Expand a&bbreviations"), False),
-		DriverSetting(
-			"pauseMode",
-			# Translators: Label for a setting in voice settings dialog.
-			_("&Pauses"),
-			False,
-			defaultVal=str(_openevv.DEFAULT_PAUSE_MODE),
-		),
 		# Translators: Label for a setting in voice settings dialog.
 		BooleanDriverSetting("voiceTags", _("Allow backquote voice &tags"), False),
 		# Translators: Label for a setting in voice settings dialog.
@@ -565,33 +558,6 @@ class SynthDriver(SynthDriver):
 			[(self._engine.setParam, (_openevv.PARAM_DICTIONARY, 0 if enable else 1))],
 		)
 
-	def _get_availablePausemodes(self):
-		"""Which pauses the engine shortens, numbered and named as the IBMTTS
-		driver does its setting of the same name."""
-		return OrderedDict(
-			(
-				# Translators: An option of the "Pauses" setting.
-				("0", StringParameterInfo("0", _("Do not shorten"))),
-				# Translators: An option of the "Pauses" setting.
-				("1", StringParameterInfo("1", _("Shorten at end of text only"))),
-				# Translators: An option of the "Pauses" setting.
-				("2", StringParameterInfo("2", _("Shorten all pauses"))),
-			)
-		)
-
-	def _get_pauseMode(self):
-		return str(self._engine.pauseMode)
-
-	def _set_pauseMode(self, value):
-		try:
-			mode = int(value)
-		except (TypeError, ValueError):
-			mode = None
-		if mode not in _openevv.PAUSE_MODES:
-			log.error("openevv: %r is not a pause mode" % (value,))
-			return
-		self._engine.control([(self._engine.setPauseMode, (mode,))])
-
 	def _get_voiceTags(self):
 		return self._voiceTags
 
@@ -613,7 +579,7 @@ class SynthDriver(SynthDriver):
 				StringParameterInfo(
 					str(hz),
 					# Translators: A sample rate, shown in kilohertz.
-					_("%g kHz") % (hz / 1000.0),
+					_("%.3g kHz") % (hz / 1000.0),
 				),
 			)
 			for _number, hz in _openevv.SAMPLE_RATES

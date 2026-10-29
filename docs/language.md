@@ -21,15 +21,13 @@ A language module is the rules and five other things: the variables the machine 
 
 Each of the four keeps one writer, and the tool that lifts is the tool that writes. That is the whole discipline: a lifter that reads objects and a reader that reads text hand the same model to the same emitter, so what the text says and what a lift says cannot come out differently formatted, and the round trip is exact rather than approximately right.
 
-What is deliberately not in the text is anything that follows from what is. The variables are a run of kinds -- `word 20`, `short 2`, `compound 1 5` -- and where each one lands and how big a machine of the language is are worked out from them by the same walk `delta_new` does, so English's 808 variables are 98 lines and the state size is derived rather than declared. The statement table's readers and writers are an offset and a width each, and their names follow the order the fields are in, exactly as the original's compiler numbered them: `vfg0000` upwards, one per field, no two fields sharing one across all 58 of English's. The settings' language number is the section that names it read as a family and a dialect. Nothing in any of the four is stated twice.
+What is deliberately not in the text is anything that follows from what is. The variables are a run of kinds -- `word 20`, `short 2`, `compound 1 5` -- and where each one lands and how big a machine of the language is are worked out from them by the same walk `delta_new` does, so English's 794 variables are 95 lines and the state size is derived rather than declared. The statement table's readers and writers are an offset and a width each, and their names follow the order the fields are in, exactly as the original's compiler numbered them: `vfg0000` upwards, one per field, no two fields sharing one across all 58 of English's. The settings' language number is the section that names it read as a family and a dialect. Nothing in any of the four is stated twice.
 
 The dictionaries read for any language now, not only English. `EVV_LANG_DIR` points `tools/module/dict.py` and the two tools it leans on at one module, the same way it points the decompiler, so
 
     EVV_LANG_DIR=lang/plpl python3 tools/module/dict.py dump
 
 writes `lang/plpl/plpl.dict`. Italian declares 13 dictionaries with 892 entries where English declares 28 with 5,945, and the shapes are the same: words to action numbers, and what an action says in an arm of a rule.
-
-The names and the roots also say where a word is stressed, and the file shows it as `stress` and a pattern after the action number wherever a word's own arm states one: a digit a syllable, 1 for the main stress, 2 for a secondary one and 0 for none, counted back from the last syllable, so 20100 is Appalachians and 1 is a word stressed on its last syllable. A word added, or moved onto an action of its own because what it says changed, is given an arm of its own rather than one a removed word left behind -- that arm would keep the removed word's stress -- and is stressed by the rules unless it asks. `tools/module/lexicon64.py` reads the words of 6.1's dictionaries out of Apple's module beside it, which is how the two can be set side by side.
 
 Two things about the sets are worth knowing before touching them. Its text is lifted from the C in the tree and not from IBM's objects, on purpose: the dictionary's three arrays in that file are laid down by `tools/module/dict.py` out of the words, so the objects hold what the dictionary said before anything was ever added to it. Running the sets lifter over that file is the one thing this repository tells you not to do, and this is why. And its numbers are the language: English declares 511 sets and 28 dictionary actions in 274 kilobytes of entries where Italian declares 153 and 13 in 77.
 
@@ -56,7 +54,7 @@ and then it builds and speaks like any other: the three files a build compiles a
 
 ### The number a language is
 
-A language is a family and a dialect packed into a word, and the family is not free. Three tables are indexed by it and all three hold eighteen: the standard voices in `src/eci/lang/eci_voicetable.c`, the dictionary in force in `src/eci/dict/eci_dict.c` and the romanizers in `src/eci/lang/eci_romanizer.c`. IBM used families one to five and eight. And four more are spoken for: `rz_isRomExist` says families 6, 10, 11 and 16 have a romanizer, so an instance of one of those is refused outright when the romanizer is not there -- which is what happened when Polish was first given family sixteen, and `eciNewEx` answered -21 and nothing else. Polish is family seventeen, `0x110000`, which is clear of all of it with eighteen left spare. Finnish is family nine, `0x90000`, and Brazilian Portuguese family seven, `0x70000`, which are 6.1's own numbers for them and clear of the four.
+A language is a family and a dialect packed into a word, and the family is not free. Three tables are indexed by it and all three hold eighteen: the standard voices in `src/eci/lang/eci_voicetable.c`, the dictionary in force in `src/eci/dict/eci_dict.c` and the romanizers in `src/eci/lang/eci_romanizer.c`. IBM used families one to five and eight. And four more are spoken for: `rz_isRomExist` says families 6, 10, 11 and 16 have a romanizer, so an instance of one of those is refused outright when the romanizer is not there -- which is what happened when Polish was first given family sixteen, and `eciNewEx` answered -21 and nothing else. Polish is family seventeen, `0x110000`, which is clear of all of it with eighteen left spare.
 
 ### What the language means by its variables
 
@@ -145,24 +143,6 @@ It does not make a Polish word sound different, and the reason is the next piece
 says how much of the module is still the template's, rule by rule and table by table, out of the text forms alone. It reads 99% Italian today: 1,749 rules of 1,750 character for character Italian's, one ours, the settings two lines apart and the variables named. The number falls as the work is done, and what it is there for is the failure it prevents -- Italian phonology coming out of something labelled Polish without anyone noticing.
 
 `TEMPLATE` says what to hold it against, and `tools/module/census.py <tag> <template> rules` lists every rule with which of the three it is.
-
-### A language lifted from ETI's 6.1
-
-Apple ships ETI Eloquence 6.1's language modules with its operating systems, and every one of them can be read the way Finnish was. The module is a fat Mach-O; its x86-64 slice is the one the tools read:
-
-    llvm-lipo -thin x86_64 fin.dylib -o fin.x64.dylib
-    tools/module/lift61.py fin.x64.dylib fifi globals          the variables
-    tools/module/lift61.py fin.x64.dylib fifi statements       the statement table
-    tools/module/lift61.py fin.x64.dylib fifi sets             the sets and dictionaries
-    tools/module/lift61.py fin.x64.dylib fifi rules            every rule, through tools/rules/lift64.py
-    tools/module/lift61.py fin.x64.dylib fifi settings         out of the rules that register voices
-    python3 tools/rules/consts.py fifi                         the strings the rules name
-    "fifi": "Finnish" in tools/module/gather.py, then run it
-    make LANGS="lang/fifi" tables-write                        the C from the texts
-
-A tag goes in `LANG_NAMES` and `LANG_NUMBERS` in `lift61.py` first: its name, and the family, dialect and library name 6.1 gives it. A rule the lifter cannot read is reported by name and is not written; `rules/written.up` is where one written by hand goes, saying `instead`. The settings say `Version=6.1`, which is what tells the interface to drive the language as 6.1's does.
-
-What the result is held to is 6.1 itself, through `test/harness/eti.sh` and a `test/cases/eti-<tag>.txt` of its own, with its word list run through the same harness; `docs/status.md` says how Finnish was.
 
 ## Languages
 

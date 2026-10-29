@@ -2,8 +2,7 @@
 
 OpenEVV has a native Speech Dispatcher output module for Linux. It keeps one
 engine instance alive, streams 16-bit mono 11025 Hz PCM back to Speech
-Dispatcher for playback -- 22050 Hz with the wideband voice -- and does not
-open an audio device itself.
+Dispatcher for playback, and does not open an audio device itself.
 
 ## Build and automatic test
 
@@ -26,7 +25,7 @@ module and exercise each one:
     make -j"$(nproc)" RULES=bytecode speechd-test-all
 
 The all-language executable is
-`build/sd_openevv-enus-engb-dede-eses-esus-frfr-frca-itit-plpl-jajp-fifi-ptbr`. Omit
+`build/sd_openevv-enus-engb-dede-eses-esus-frfr-frca-itit-plpl-jajp`. Omit
 `RULES=bytecode` for the faster-speaking compiled-rule build; generating it
 takes substantially longer, and the suite passes in both forms.
 
@@ -53,7 +52,7 @@ language that quietly stopped being offered fails the check.
 For a user-local compiled-rule installation with every language, use absolute
 paths appropriate to the account:
 
-    make -j"$(nproc)" RULES=c LANGS="lang/enus lang/engb lang/dede lang/eses lang/esus lang/frfr lang/frca lang/itit lang/plpl lang/jajp lang/fifi lang/ptbr" PREFIX=/home/Username/.local SPEECHD_CONFDIR=/home/Username/.config/speech-dispatcher/modules speechd-install
+    make -j"$(nproc)" RULES=c LANGS="lang/enus lang/engb lang/dede lang/eses lang/esus lang/frfr lang/frca lang/itit lang/plpl lang/jajp" PREFIX=/home/Username/.local SPEECHD_CONFDIR=/home/Username/.config/speech-dispatcher/modules speechd-install
 
 This installs `sd_openevv` below the chosen module directory and `openevv.conf` below the chosen configuration directory. Distribution packagers can set `DESTDIR`, `SPEECHD_MODULEDIR`, and `SPEECHD_CONFDIR` directly. Nothing further is needed to make the module visible: Speech Dispatcher walks its user and system module directories itself and loads what it finds there, so an installed module is offered the next time the daemon starts.
 
@@ -129,20 +128,6 @@ each `-m` mode: the direct protocol test cannot cover the server-side symbol
 names or translations. Finally, test rapid interruption and language changes
 in the actual screen reader, because that test also cannot establish audible
 latency, playback routing, or application behavior.
-
-## The wideband voice
-
-A line in `openevv.conf` turns it on:
-
-    Wideband 1
-
-The voice below about 5.4 kHz is then the same one, and above that a second
-synthesiser running the same frames adds what a higher rate has room for: the
-top of the frication and of the vowels. The module hands it over at 22050 Hz, the rate it is made
-at, and Speech Dispatcher converts it to whatever the sound server wants. The
-module reads its configuration when it starts, so a change takes effect the
-next time Speech Dispatcher starts it. `test/speechd.py` holds what comes back
-to what `evv -W -R 22050` makes for the same text, byte for byte.
 
 ## Supported behavior and limits
 

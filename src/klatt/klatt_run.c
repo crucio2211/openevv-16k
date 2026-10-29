@@ -437,32 +437,6 @@ typedef struct Cell {
     int32_t l;
 } Cell;
 
-/* What a cell holds as a whole number. A language lifted from 6.1 hands
-   over a fixed cell where IBM's handed a long or a short, its tag says so,
-   and 6.1 truncates its double here as cvttsd2si does. */
-static int32_t cell_long(const Cell *c)
-{
-    return c->pad == DG_FIXED ? delta_fixed_int(c->l) : c->l;
-}
-
-static int32_t cell_word(const Cell *c)
-{
-    return c->pad == DG_FIXED ? delta_fixed_int(c->l) : c->w;
-}
-
-/* The volume, which IBM's synthesiser takes in hundredths of the factor it
-   scales the samples by -- English hands it 202 -- and 6.1 hands over as the
-   factor itself, 2.02, which its own synthesiser takes as a float. Cut to a
-   whole number like the rest it was 2, two hundredths, and Finnish and
-   Portuguese came out forty decibels quieter than 6.1. */
-static int32_t cell_hundredths(const Cell *c)
-{
-    if (c->pad != DG_FIXED)
-        return c->w;
-    return (int32_t)(((int64_t)c->l * 100 + DELTA_FIXED_ONE / 2)
-                     / DELTA_FIXED_ONE);
-}
-
 /* The parameter frame the synthesiser works from, and the defaults every
    frame starts at: a hundred hertz, the eight formants at five hundred,
    fifteen hundred, twenty-five hundred and so on, and everything not named
@@ -621,18 +595,18 @@ int callSynthesizeArray(DeltaThis *d, Cell *rate, Cell *c2, Cell *c3,
     if (!buf)
         return 1;
 
-    v2 = cell_long(c2);
-    v3 = cell_long(c3);
-    v4 = cell_long(c4);
-    v5 = cell_long(c5);
-    v6 = cell_word(c6);
-    v7 = cell_word(c7);
-    v8 = cell_word(c8);
-    v9 = cell_word(c9);
-    v10 = cell_word(c10);
-    v11 = cell_word(c11);
-    v12 = cell_word(c12);
-    v13 = cell_hundredths(c13);
+    v2 = c2->l;
+    v3 = c3->l;
+    v4 = c4->l;
+    v5 = c5->l;
+    v6 = c6->w;
+    v7 = c7->w;
+    v8 = c8->w;
+    v9 = c9->w;
+    v10 = c10->w;
+    v11 = c11->w;
+    v12 = c12->w;
+    v13 = c13->w;
 
     for (i = 0; i < FRAME_WORDS; i++)
         frame[i] = 0;
@@ -643,7 +617,7 @@ int callSynthesizeArray(DeltaThis *d, Cell *rate, Cell *c2, Cell *c3,
        is a value and has to be read back as one: a pointer is wider than that
        where a pointer is wider than a value. */
     va_start(ap, c13);
-    n = cell_word(EVV_AT(Cell *, va_arg(ap, int32_t)));
+    n = EVV_AT(Cell *, va_arg(ap, int32_t))->w;
     while (n != 0) {
         n--;
         if (n < 0) {
@@ -651,8 +625,8 @@ int callSynthesizeArray(DeltaThis *d, Cell *rate, Cell *c2, Cell *c3,
             cpp_delete(buf);
             return 1;
         }
-        frame[n] = cell_word(EVV_AT(Cell *, va_arg(ap, int32_t)));
-        n = cell_word(EVV_AT(Cell *, va_arg(ap, int32_t)));
+        frame[n] = EVV_AT(Cell *, va_arg(ap, int32_t))->w;
+        n = EVV_AT(Cell *, va_arg(ap, int32_t))->w;
     }
     va_end(ap);
 
@@ -1043,18 +1017,6 @@ int synthesize(DeltaThis *d, void *buf, int32_t isArray, int32_t *streamA,
         a7 = 5;
 
     last = (LastGlob *)DL_BUF_140(lang);
-    /* A call that names no rate carries on at the one in force, and a
-       synthesiser that has never been given its parameters has none: opening
-       it calls an error reporter nothing installed. That is reached when the
-       first words an instance is given are abandoned -- a string the walk
-       guard backs out of -- and a pause annotation after them is all there
-       is left to say, which is silence either way. */
-    if (!rate && !last->cp.sample_rate) {
-        SD_PLAYING(dev) = 0;
-        SD_INTERRUPTED(dev) = 0;
-        return 0;
-    }
-
     /* Turning the companion on or off starts both synthesisers afresh, so
        that the two begin from the same instant and never from two
        histories. */

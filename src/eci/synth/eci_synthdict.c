@@ -282,13 +282,6 @@ THIS int32_t std_newDict(SynthThread *t, int32_t language, void **out)
     }
     if (!rec)
         return rc;
-
-    /* Counted against the language, so its engine outlives a change of
-       language for as long as this does. */
-    sy_mutexWait(lock, -1);
-    ((EngineData *)ea_getEngineData(ST_ENGINES(t), &want))->dicts += 1;
-    sy_mutexRelease(lock);
-
     *out = rec;
     return OK;
 }
@@ -316,11 +309,6 @@ THIS int32_t std_deleteDict(SynthThread *t, Dict *dict)
     if (dict->rom && dict->rom->ops->deleteDict)
         dict->rom->ops->deleteDict(dict->rom, dict->romDict);
     cpp_delete(dict);
-
-    sy_mutexWait(ST_LOCK(t), -1);
-    if (((EngineData *)data)->dicts > 0)
-        ((EngineData *)data)->dicts -= 1;
-    sy_mutexRelease(ST_LOCK(t));
     return rc;
 }
 

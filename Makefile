@@ -71,15 +71,6 @@ SUF   := $(if $(filter-out enus,$(TAGS)),-$(subst $(space),-,$(TAGS)))
 CC  ?= cc
 NM  ?= nm
 
-# Put in front of every compile to an object, and empty where there is none.
-# The rules as C are thirty-two files a language for each of four compilers,
-# and a change to one language, or to a tool every language is written with,
-# leaves most of them as they were: a cache gives those back rather than
-# compiling them again. `make CCACHE=' turns it off.
-ifeq ($(origin CCACHE),undefined)
-CCACHE := $(shell command -v ccache 2>/dev/null)
-endif
-
 # Which rules the interpreter finds already written as C.
 #
 # `c' links the thirteen megabytes tools/rules/decompile.py writes out of the
@@ -288,17 +279,9 @@ LOW := -DEVV_ARENA=1
 endif
 
 OPT        ?= -O2
-# The rules written as C reach a place in a frame or a variable through a
-# pointer cast to the width the operation has, and a rule may write a place
-# four bytes wide and then compare two bytes of it. Under C's aliasing rules
-# the compiler may take those for different objects and compare what was
-# there before the write, which is what the rules lifted from 6.1 do and IBM's
-# never did -- so it went wrong only in the C form of those, and silently. The
-# rest of the engine reads memory the same way, so this is everywhere.
-ALIAS      := -fno-strict-aliasing
 INCS       := -Iinclude $(addprefix -I,$(SRCDIRS)) $(addprefix -I,$(LANGS)) \
               $(foreach l,$(LANGS),-Irom/$(notdir $(l)))
-ALL_CFLAGS := $(OPT) $(ALIAS) -std=gnu99 $(INCS) $(WARN) $(LOW) $(TRIM) $(ROMDEFS) \
+ALL_CFLAGS := $(OPT) -std=gnu99 $(INCS) $(WARN) $(LOW) $(TRIM) $(ROMDEFS) \
               $(CFLAGS)
 
 # One directory per build, where a build is which form the rules are in and
@@ -366,7 +349,7 @@ so: $(BUILD)/$(SONAME)
 
 $(OBJDIRPIC)/%.o: %.c $(HEADERS)
 	@mkdir -p $(OBJDIRPIC)
-	@$(CCACHE) $(CC) $(CFLAGSPIC) -c $< -o $@
+	@$(CC) $(CFLAGSPIC) -c $< -o $@
 
 $(BUILD)/$(SONAME): lib/eci_api.c $(OBJECTSPIC) $(RULESTAMP)
 	@for o in $(OBJDIRPIC)/*.o; do \
@@ -384,13 +367,7 @@ $(BUILD)/$(SONAME): lib/eci_api.c $(OBJECTSPIC) $(RULESTAMP)
 .PHONY: sotest
 sotest: $(BUILD)/libecitest
 	@cd $(BUILD) && EVV_ECI_LIB=./libeci$(LIBSUF).so ./libecitest -o sotest.wav \
-	   "Hello. This is OpenEVV speaking."
-	@cd $(BUILD) && for e in live unload; do \
-	   EVV_ECI_LIB=./libeci$(LIBSUF).so timeout 60 ./libecitest -e $$e \
-	     -o sotest-$$e.wav "Hello. This is OpenEVV speaking." || exit 1; \
-	   cmp -s sotest.wav sotest-$$e.wav \
-	     || { echo "sotest: ending with -e $$e changed what it said"; exit 1; }; \
-	 done
+	   "Hello. This is the Eloquence synthesizer speaking."
 
 $(BUILD)/libecitest: test/lib/dll.c $(BUILD)/$(SONAME)
 	@$(CC) $(OPT) -std=gnu99 test/lib/dll.c -ldl -o $@
@@ -409,7 +386,7 @@ so32: $(BUILD)/$(SONAME32)
 
 $(OBJDIRPIC32)/%.o: %.c $(HEADERS)
 	@mkdir -p $(OBJDIRPIC32)
-	@$(CCACHE) $(CC32) $(CFLAGSPIC32) -c $< -o $@
+	@$(CC32) $(CFLAGSPIC32) -c $< -o $@
 
 $(BUILD)/$(SONAME32): lib/eci_api.c $(OBJECTSPIC32) $(RULESTAMP)
 	@$(CC32) $(CFLAGSPIC32) -shared -Wl,-soname,$(SONAME32) \
@@ -543,13 +520,13 @@ speechd-test: $(BUILD)/sd_openevv$(SUF) $(BUILD)/evv
 	   python3 test/speechd.py $(BUILD)/sd_openevv$(SUF) speechd/openevv.conf
 
 # And with every language in it, which is the configuration a release ships.
-# Twelve are linked and eleven are advertised: Japanese builds and speaks but its
+# Ten are linked and nine are advertised: Japanese builds and speaks but its
 # text is not UTF-8 in any of its three code sets, and speechd/openevv.c says
 # why it is deliberately not offered. So the count is stated rather than taken
 # from LANGS, and a language that stopped being advertised would fail here.
 speechd-test-all:
-	@$(MAKE) RULES=$(RULES) SPEECHD_LANGUAGES=11 \
-	   LANGS="lang/enus lang/engb lang/dede lang/eses lang/esus lang/frfr lang/frca lang/itit lang/plpl lang/jajp lang/fifi lang/ptbr" \
+	@$(MAKE) RULES=$(RULES) SPEECHD_LANGUAGES=9 \
+	   LANGS="lang/enus lang/engb lang/dede lang/eses lang/esus lang/frfr lang/frca lang/itit lang/plpl lang/jajp" \
 	   speechd-test
 
 # A dictionary read in from a file, which nothing else here does: cli/probe.c
@@ -644,7 +621,7 @@ $(BUILD)/ssml: test/harness/ssml.c $(BUILD)/libevv.a
 
 $(OBJDIR)/%.o: %.c $(HEADERS)
 	@mkdir -p $(OBJDIR)
-	@$(CCACHE) $(CC) $(ALL_CFLAGS) -c $< -o $@
+	@$(CC) $(ALL_CFLAGS) -c $< -o $@
 
 # A source that gets renamed leaves its object behind, and a stale one is a
 # duplicate definition waiting to happen, so they go before the archive is
@@ -917,34 +894,15 @@ rules: $(GENERATED)
 # The bytecode is a prerequisite because the decompiler reads it: this writes
 # the rules as C out of the array in delta_rules_<tag>.c, which is itself
 # written out of the text. A rule changed in the text goes through both.
-#
-# The rule code is written again whenever anything it is made from is newer,
-# and nearly always comes out as it was -- a change to one language's rules or
-# to a tool every language is written with rewrites all nine. So what the
-# decompiler would read is summed first, along with the settings that change
-# what it writes, and where the sum is the one it last wrote from and every
-# part is there, the parts are left as they are. Make then finds them no newer
-# than before and compiles nothing, where writing them again cost two minutes
-# a language and every object after it.
 define rules_for
 $(foreach n,$(PARTNS),$(1)/delta_rules_c$(n)_$(notdir $(1)).c) &: \
                                      $(1)/delta_rules_$(notdir $(1)).c \
                                      tools/rules/decompile.py \
                                      tools/rules/patterns.py tools/evv.py
-	@sum=$$$$(cat $$^ $(1)/delta_globals_$(notdir $(1)).c \
-	              $(1)/delta_consts_$(notdir $(1)).c src/delta/delta.h \
-	              2>/dev/null | sha256sum | cut -c1-64)-$(PARTS)-$$$${EVV_STALE_ALL:-}-$$$${EVV_RULE_PROVENANCE:-}; \
-	 have=yes; \
-	 for f in $(foreach n,$(PARTNS),$(1)/delta_rules_c$(n)_$(notdir $(1)).c); do \
-	   [ -f "$$$$f" ] || have=; done; \
-	 [ -n "$$$$have" ] \
-	   && [ "$$$$sum" = "$$$$(cat $(BUILD)/decompiled-$(notdir $(1)).sum 2>/dev/null)" ] \
-	   && exit 0; \
-	 rm -f $(1)/delta_rules_c[0-9][0-9]_$(notdir $(1)).c \
-	       $(1)/delta_rules_c_$(notdir $(1)).c $(BUILD)/decompiled-$(notdir $(1)).sum; \
-	 EVV_LANG_DIR=$(1) EVV_RULE_PARTS=$(PARTS) \
-	   python3 tools/rules/decompile.py all || exit 1; \
-	 mkdir -p $(BUILD); echo "$$$$sum" > $(BUILD)/decompiled-$(notdir $(1)).sum
+	@rm -f $(1)/delta_rules_c[0-9][0-9]_$(notdir $(1)).c \
+	       $(1)/delta_rules_c_$(notdir $(1)).c
+	@EVV_LANG_DIR=$(1) EVV_RULE_PARTS=$(PARTS) \
+	  python3 tools/rules/decompile.py all
 endef
 $(foreach l,$(LANGS),$(eval $(call rules_for,$(l))))
 
@@ -999,18 +957,6 @@ phonemes-bin: $(BUILD)/phonemes$(SUF)
 phonemes: $(BUILD)/phonemes$(SUF)
 	@$(MAKE) -C reference TAG=$(TAG) BUILD=../$(BUILD)/reference$(SUF) phontry
 	@EVV_LANG=$(TAG) bash test/harness/phonemes.sh $(PHONCASES)
-
-# The same question asked of ETI Eloquence 6.1, which the rules lifted from it
-# are held to: one driver loads either engine by name and asks each for its
-# phonemes. It wants 6.1 installed, so it runs here and on no runner;
-# docs/testing.md says where it looks.
-.PHONY: eti
-eti: so $(BUILD)/eti
-	@EVV_ECI_LIB=$(BUILD)/libeci$(LIBSUF).so bash test/harness/eti.sh
-
-$(BUILD)/eti: test/harness/eti.c
-	@$(CC) $(OPT) -std=gnu99 test/harness/eti.c -ldl -o $@
-	@echo "built $@"
 
 # lib/eci_api.c goes in because the harness calls the published names and the
 # archive holds only the engine's own short ones. It brings the constructor
@@ -1086,10 +1032,10 @@ crashers32: $(BUILD)/evv32
 .PHONY: words words-record
 # Every language with a list, which is all of them but Polish and Japanese.
 words:
-	@bash test/words.sh check enus engb dede eses esus frfr frca itit fifi ptbr
+	@bash test/words.sh check enus engb dede eses esus frfr frca itit
 
 words-record:
-	@bash test/words.sh record enus engb dede eses esus frfr frca itit fifi ptbr
+	@bash test/words.sh record enus engb dede eses esus frfr frca itit
 
 .PHONY: matrix matrix-record
 matrix:
@@ -1165,7 +1111,7 @@ install-lib: $(BUILD)/$(SONAME)
 # CC32 can be set to whole: `make evv32 CC32="gcc -m32"'.
 CC32      ?= i686-unknown-linux-gnu-gcc
 OBJDIR32  := $(BUILD)/obj32-$(RULES)/$(subst $(space),-,$(TAGS))
-CFLAGS32  := $(OPT) $(ALIAS) -std=gnu99 $(INCS) $(WARN) $(TRIM) $(ROMDEFS) \
+CFLAGS32  := $(OPT) -std=gnu99 $(INCS) $(WARN) $(TRIM) $(ROMDEFS) \
              $(CFLAGS)
 OBJECTS32 := $(patsubst %.c,$(OBJDIR32)/%.o,$(notdir $(SOURCES)))
 
@@ -1182,7 +1128,7 @@ $(BUILD)/probe32$(SUF): cli/probe.c $(BUILD)/libevv32$(SUF).a
 
 $(OBJDIR32)/%.o: %.c $(HEADERS)
 	@mkdir -p $(OBJDIR32)
-	@$(CCACHE) $(CC32) $(CFLAGS32) -c $< -o $@
+	@$(CC32) $(CFLAGS32) -c $< -o $@
 
 $(BUILD)/libevv32$(SUF).a: $(OBJECTS32) $(RULESTAMP)
 	@for o in $(OBJDIR32)/*.o; do \
@@ -1205,13 +1151,11 @@ WINDRES    ?= x86_64-w64-mingw32-windres
 ARWIN      ?= x86_64-w64-mingw32-ar
 OBJDIRWIN  := $(BUILD)/objwin-$(RULES)/$(subst $(space),-,$(TAGS))
 
-CFLAGSWIN  := $(OPT) $(ALIAS) -std=gnu99 $(INCS) $(WARN) -DEVV_ARENA=1 \
+CFLAGSWIN  := $(OPT) -std=gnu99 $(INCS) $(WARN) -DEVV_ARENA=1 \
               $(TRIM) $(ROMDEFS) $(CFLAGS)
-# Static, so what ships is one file. MINGW64_LDFLAGS, and MINGW_LDFLAGS for
-# thirty-two bits, are for a cross gcc whose thread runtime is a library of its
-# own, as nixpkgs' default mcfgthreads is: outside a real cross stdenv nothing
-# puts it on the link path. The flake's compilers use gcc's own win32 threads,
-# as the releases' do, and need neither.
+# Static, so what ships is one file. MINGW64_LDFLAGS is where the cross gcc's
+# thread runtime is; the flake sets it, since nothing puts it on the link path
+# outside a real cross stdenv.
 LDFLAGSWIN := -static $(MINGW64_LDFLAGS)
 
 # The same list for Windows, and RULECODE is named here for the same reason
@@ -1276,16 +1220,9 @@ $(BUILD)/eci.dll: lib/eci_api.c $(OBJDIRWIN)/eci.res $(BUILD)/libevv-win$(SUF).a
 	@cp lib/eci.ini $(BUILD)/eci.ini
 	@echo "built $@"
 
-# What Windows shows as the library's version: the release workflow names
-# the tag, and anything else is 0.0.0.
-EVV_VERSION ?= 0.0.0
-RCVERSION := $(subst ., ,$(EVV_VERSION)) 0 0 0
-RCDEFS    := -DEVV_MAJOR=$(word 1,$(RCVERSION)) -DEVV_MINOR=$(word 2,$(RCVERSION)) \
-             -DEVV_PATCH=$(word 3,$(RCVERSION))
-
 $(OBJDIRWIN)/eci.res: lib/eci.rc
 	@mkdir -p $(OBJDIRWIN)
-	@$(WINDRES) $(RCDEFS) -I lib lib/eci.rc -O coff -o $@
+	@$(WINDRES) -I lib lib/eci.rc -O coff -o $@
 
 # Speaks through the library rather than against the engine, by name, the way
 # an add-on does. `test/hash.sh build/dlltest.exe' then holds what comes out of
@@ -1302,7 +1239,7 @@ $(OBJDIRWIN)/speak.res: win/speak.rc win/speak.h
 
 $(OBJDIRWIN)/%.o: %.c $(HEADERS)
 	@mkdir -p $(OBJDIRWIN)
-	@$(CCACHE) $(CCWIN) $(CFLAGSWIN) -c $< -o $@
+	@$(CCWIN) $(CFLAGSWIN) -c $< -o $@
 
 $(BUILD)/libevv-win$(SUF).a: $(OBJECTSWIN) $(RULESTAMP)
 	@for o in $(OBJDIRWIN)/*.o; do \
@@ -1324,7 +1261,7 @@ CCWIN32     ?= i686-w64-mingw32-gcc
 WINDRES32   ?= i686-w64-mingw32-windres
 ARWIN32     ?= i686-w64-mingw32-ar
 OBJDIRWIN32 := $(BUILD)/objwin32-$(RULES)/$(subst $(space),-,$(TAGS))
-CFLAGSWIN32 := $(OPT) $(ALIAS) -std=gnu99 $(INCS) $(WARN) $(TRIM) $(ROMDEFS) $(CFLAGS)
+CFLAGSWIN32 := $(OPT) -std=gnu99 $(INCS) $(WARN) $(TRIM) $(ROMDEFS) $(CFLAGS)
 LDFLAGSWIN32 := -static -Wl,--kill-at $(MINGW_LDFLAGS)
 OBJECTSWIN32 := $(patsubst %.c,$(OBJDIRWIN32)/%.o,$(notdir $(SOURCESWIN)))
 
@@ -1350,11 +1287,11 @@ $(BUILD)/evv32.exe: cli/evv.c $(BUILD)/libevv-win32$(SUF).a $(RULESTAMP)
 
 $(OBJDIRWIN32)/eci.res: lib/eci.rc
 	@mkdir -p $(OBJDIRWIN32)
-	@$(WINDRES32) $(RCDEFS) -I lib lib/eci.rc -O coff -o $@
+	@$(WINDRES32) -I lib lib/eci.rc -O coff -o $@
 
 $(OBJDIRWIN32)/%.o: %.c $(HEADERS)
 	@mkdir -p $(OBJDIRWIN32)
-	@$(CCACHE) $(CCWIN32) $(CFLAGSWIN32) -c $< -o $@
+	@$(CCWIN32) $(CFLAGSWIN32) -c $< -o $@
 
 $(BUILD)/libevv-win32$(SUF).a: $(OBJECTSWIN32) $(RULESTAMP)
 	@for o in $(OBJDIRWIN32)/*.o; do \

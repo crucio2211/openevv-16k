@@ -111,7 +111,4 @@ void initGlobalVars(delta_state *d)
 
     for (i = 0; i < d->nshort; i++)
         *EVV_AT(int16_t **, d->shrt)[i] = 0;
-
-    for (i = 0; i < d->nfixed; i++)
-        *EVV_AT(int32_t **, d->fixed)[i] = 0;
 }

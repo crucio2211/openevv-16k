@@ -70,7 +70,6 @@ int      STDCALL ed_loadDict(OldInst *h, void *dict, int32_t which,
 int      STDCALL ed_deleteDict(OldInst *h, void *dict);
 int      STDCALL eo_speaking(OldInst *h);
 int      STDCALL eo_getAvailableLanguages(uint32_t *out, int *count);
-int32_t  STDCALL es_setDefaultParam(int32_t which, int32_t value);
 
 void evvRunStaticInitialisers(void);
 void evv_port_start(void);
@@ -206,23 +205,16 @@ static void nap(long ms)
    still speaking is what pumps it, so keep asking -- for thirty seconds, which
    is a limit and not a measurement. Stopping there without a word wrote a
    short file that read as an answer, so it says so and fails instead, and
-   writes nothing.
-
-   EVV_PROBE_WAIT says how many seconds instead. A traced sentence takes ten
-   on its own, nearly all of it the kernel writing one flushed line at a time,
-   and two dozen traced at once took some past thirty: the trace was cut off
-   wherever the limit fell, and the two sides of a check then differed. */
+   writes nothing. */
 static void drain(OldInst *h)
 {
-    const char *e = getenv("EVV_PROBE_WAIT");
-    long limit = (e != NULL && atol(e) > 0) ? atol(e) * 100 : 3000;
-    long i;
+    int i;
 
-    for (i = 0; i < limit && eo_speaking(h); i++)
+    for (i = 0; i < 3000 && eo_speaking(h); i++)
         nap(10);
     if (eo_speaking(h)) {
-        fprintf(stderr, "speak: still speaking after %ld seconds, so the"
-                " samples would be short; giving up\n", limit / 100);
+        fprintf(stderr, "speak: still speaking after thirty seconds, so the"
+                " samples would be short; giving up\n");
         exit(3);
     }
 }
@@ -260,7 +252,7 @@ static char *slurp(const char *path)
 int main(int argc, char **argv)
 {
     const char *text = (argc > 1) ? argv[1]
-        : "Hello. This is OpenEVV speaking.";
+        : "Hello. This is the Eloquence synthesizer speaking.";
     const char *out = (argc > 2) ? argv[2] : "speak.wav";
     OldInst    *h;
 
@@ -288,18 +280,7 @@ int main(int argc, char **argv)
            nothing set the engine picks, which is the first one linked. */
         {
             const char *want = getenv("EVV_LANGUAGE");
-            const char *ibm = getenv("EVV_IBM_DEFAULTS");
 
-            /* The abbreviation dictionary and phrase prediction are off here
-               and on in IBM's engine, and the pause at an unpunctuated end is
-               shortened here and was not there, so test/compare.sh asks for
-               all three whenever ours is held to IBM's. Nought is on for the
-               dictionary, which the interface holds inverted. */
-            if (ibm != NULL && *ibm != 0) {
-                es_setDefaultParam(3, 0);
-                es_setDefaultParam(11, 1);
-                es_setDefaultParam(33, 0);
-            }
             if (want != NULL && *want != 0)
                 h = eo_newEx((uint32_t)strtoul(want, NULL, 0));
             else
