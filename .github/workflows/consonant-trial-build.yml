@@ -1,0 +1,55 @@
+name: OpenEVV 16k NVDA addon trial build
+
+on:
+  push:
+    branches:
+      - trial/consonant-duration-build
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-addon:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Checkout trial branch
+        uses: actions/checkout@v4
+
+      - name: Install cross-compilers and build tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq mingw-w64 python3 zip make
+
+      - name: Build 64-bit DLL with C rules
+        run: |
+          set -eux
+          LANGS="lang/enus lang/engb lang/eses lang/esus lang/dede lang/frfr lang/frca lang/itit lang/plpl lang/jajp"
+          make build/eci.dll RULES=c LANGS="$LANGS" -j2
+          test -s build/eci.dll
+
+      - name: Build 32-bit DLL with C rules
+        run: |
+          set -eux
+          LANGS="lang/enus lang/engb lang/eses lang/esus lang/dede lang/frfr lang/frca lang/itit lang/plpl lang/jajp"
+          make build/eci32.dll RULES=c LANGS="$LANGS" -j2
+          test -s build/eci32.dll
+
+      - name: Package NVDA add-on and validate exports
+        run: |
+          set -eux
+          python3 nvda/build.py --version trial-consonant-duration --out build
+          test -s build/openevv-trial-consonant-duration.nvda-addon
+          python3 -m zipfile -t build/openevv-trial-consonant-duration.nvda-addon
+
+      - name: Upload test add-on and DLLs
+        uses: actions/upload-artifact@v4
+        with:
+          name: openevv-16k-consonant-trial
+          path: |
+            build/openevv-trial-consonant-duration.nvda-addon
+            build/eci.dll
+            build/eci32.dll
+          if-no-files-found: error
+          retention-days: 14
