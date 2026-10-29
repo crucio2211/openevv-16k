@@ -323,27 +323,6 @@ static int ev_holding(void)
     return on;
 }
 
-/* Sixteen thousand is the wideband rate the add-on offers, and it is made
-   by the synthesiser itself. It stays that way
-   unless EVV_UPSAMPLE names one of the ways of raising the rate, which is
-   how the two are still compared without a rebuild. */
-static int ev_nativeWanted(int32_t hz)
-{
-    static int decided;
-    static int on = 1;
-
-    if (hz != 16000)
-        return 0;
-    if (!decided) {
-        const char *say = getenv("EVV_UPSAMPLE");
-
-        decided = 1;
-        if (say != 0 && say[0] != 0 && strcmp(say, "none") != 0)
-            on = 0;
-    }
-    return on;
-}
-
 /* And what the engine is to run at to produce a rate. The same number in
    equals the same number out, whichever way the caller asked for it, which
    is what lets the layer below work this out for itself rather than being
@@ -358,11 +337,6 @@ int32_t ev_engineHz(int32_t hz)
         return hz;
 
     if (hz > EV_BASE_HIGH) {
-        /* The wideband rate is synthesised outright, with the noise left
-           open to the new band (klatt_fx.c), rather than raised from
-           eleven thousand and twenty five. */
-        if (ev_nativeWanted(hz))
-            return hz;
         if (ev_holding())
             return EV_BASE_HIGH;
         /* Synthesised outright, which is the comparison rather than the
@@ -578,6 +552,13 @@ int ev_sendChangedEnvironment(OldInst *h, Environment env, int32_t force)
         h->wideband_sent = h->wideband;
     }
 
+    if (h->pauses != h->pauses_sent) {
+        if (setECIerror(api_set_param(OI_NEW(h), 0, ECI_PARAM_PAUSES,
+                                      h->pauses), h))
+            return 0;
+        h->pauses_sent = h->pauses;
+    }
+
     /* The language first and on its own, because a change of family has to
        be noticed before the romanizer setting is decided. */
     if (force || e[ENV_LANGUAGE] != sent[ENV_LANGUAGE]) {
@@ -689,6 +670,14 @@ int32_t STDCALL ev_setParam(OldInst *h, int32_t which, int32_t value)
             return -1;
         old = inst->wideband;
         inst->wideband = value;
+        return old;
+    }
+
+    if (which == ECI_OLD_PAUSES) {
+        if (value < PAUSES_NONE || value > PAUSES_ALWAYS)
+            return -1;
+        old = inst->pauses;
+        inst->pauses = value;
         return old;
     }
 

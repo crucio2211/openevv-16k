@@ -21,7 +21,9 @@ usage: engine.py
 """
 
 import os
+import shutil
 import sys
+import tempfile
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -88,6 +90,11 @@ class FakeDll:
         self.buffer = None
         self.params = {}
         self.voiceParams = dict(VOICE_PARAMS)
+        #: Each file a dictionary read: the dictionary, the volume, the bytes
+        #: as they were when it was read, and the name it was read under.
+        self.dictFiles = []
+        self.dictsMade = 0
+        self.loadAnswer = 0
 
     def __getattr__(self, name):
         if not name.startswith("eci"):
@@ -127,15 +134,13 @@ class FakeDll:
             return 1
         if name == "eciGetVoiceParam":
             return self.voiceParams[args[2]]
-        if name == "eciCopyVoice":
-            # A preset replaces every setting of the voice, the rate too.
-            self.voiceParams = dict(VOICE_PARAMS)
-            return 1
         if name == "eciSetVoiceParam":
             was = self.voiceParams[args[2]]
             self.voiceParams[args[2]] = args[3]
             return was
         if name == "eciSetParam":
+            if args[1] == getattr(self, "refuse", None):
+                return -1
             was = self.params.get(args[1], 0)
             self.params[args[1]] = args[2]
             return was
@@ -144,13 +149,18 @@ class FakeDll:
             return hook(*args) if hook else 1
         if name == "eciDelete":
             return 0
-        if name == "eciSpeaking":
-            return 0
         if name == "eciNewDict":
-            self.dicts = getattr(self, "dicts", 0) + 1
-            return 0x7000 + self.dicts
-        if name in ("eciSetDict", "eciLoadDict"):
+            self.dictsMade += 1
+            return 0x5000 + self.dictsMade
+        if name == "eciLoadDict":
+            _h, dictionary, volume, path = args
+            with open(os.fsdecode(path), "rb") as f:
+                self.dictFiles.append((dictionary, volume, f.read(), path))
+            return self.loadAnswer
+        if name == "eciSetDict":
             return 0
+        if name == "eciDeleteDict":
+            return None
         return 1
 
 
@@ -243,6 +253,33 @@ def control_checks():
     engine.close()
 
 
+def restore_checks():
+    """What an annotation left changed is put back to the reader's choice."""
+    dll = FakeDll()
+    players = []
+    mod = engine_module(dll, players)
+
+    engine = mod.Engine(lambda index: None)
+    engine.open()
+
+    engine.setVoiceParam(mod.VOICE_SPEED, 80)
+    # What a `vs in an utterance cut off before its change back leaves.
+    dll.voiceParams[mod.VOICE_SPEED] = 150
+    dll.voiceParams[mod.VOICE_PITCH] = 90
+    engine.restoreVoiceParams((mod.VOICE_SPEED,))
+    check("a rate left changed is put back to the reader's",
+          dll.voiceParams[mod.VOICE_SPEED], 80)
+    check("and what it was not asked to put back is left alone",
+          dll.voiceParams[mod.VOICE_PITCH], 90)
+
+    engine.setVoiceParam(mod.VOICE_SPEED, 95)
+    dll.voiceParams[mod.VOICE_SPEED] = 150
+    engine.restoreVoiceParams((mod.VOICE_SPEED,))
+    check("and it is the reader's latest, read when it runs",
+          dll.voiceParams[mod.VOICE_SPEED], 95)
+    engine.close()
+
+
 def samplerate_checks():
     """Changing the rate has to move the player with it, or not at all.
 
@@ -272,11 +309,11 @@ def samplerate_checks():
           engine.setSampleRate(mod.SAMPLE_RATE), True)
     check("and builds no player either", len(players), 1)
 
-    check("a rate the library has is taken", engine.setSampleRate(16000), True)
-    check("the engine is told which", dll.params.get(mod.PARAM_SAMPLE_RATE), 3)
-    check("a player is built for it", players[-1].made["samplesPerSec"], 16000)
+    check("a rate the library has is taken", engine.setSampleRate(22050), True)
+    check("the engine is told which", dll.params.get(mod.PARAM_SAMPLE_RATE), 2)
+    check("a player is built for it", players[-1].made["samplesPerSec"], 22050)
     check("the old one is closed", first.closed, 1)
-    check("and the engine says what it is running at", engine.sampleRate, 16000)
+    check("and the engine says what it is running at", engine.sampleRate, 22050)
 
     # Nought is a rate, so a setter that tested the answer for truth rather
     # than for a negative would read eight thousand as a refusal.
@@ -284,13 +321,6 @@ def samplerate_checks():
           engine.setSampleRate(8000), True)
     check("even though its setting is nought",
           dll.params.get(mod.PARAM_SAMPLE_RATE), 0)
-    check("with a player built for it", players[-1].made["samplesPerSec"], 8000)
-
-    check("and going back to eleven thousand works",
-          engine.setSampleRate(11025), True)
-    check("with the engine told one", dll.params.get(mod.PARAM_SAMPLE_RATE), 1)
-    check("the rates offered are the three asked for",
-          [hz for _n, hz in mod.SAMPLE_RATES], [8000, 11025, 16000])
 
     engine.close()
 
@@ -314,7 +344,7 @@ def samplerate_checks():
     nvwave.WavePlayer = refuse
     try:
         check("a rate whose player will not build is refused",
-              engine.setSampleRate(16000), False)
+              engine.setSampleRate(44100), False)
     finally:
         nvwave.WavePlayer = working
     check("and the engine is put back to the rate it was at",
@@ -324,135 +354,58 @@ def samplerate_checks():
     engine.close()
 
 
-def boost_checks():
-    """A boost is louder without wrapping, and off is exactly nothing."""
-    import array
-
+def wideband_checks():
+    """The wideband voice is a setting and nothing else: the player stays."""
     dll = FakeDll()
     players = []
     mod = engine_module(dll, players)
     engine = mod.Engine(lambda index: None)
     engine.open()
 
-    raw = array.array("h", [0, 1000, -1000, 10000, -10000, 32767, -32768]).tobytes()
-    check("off changes nothing", engine._boosted(raw), raw)
+    check("it starts off", engine.wideband, False)
+    check("turning it on is taken", engine.setWideband(True), True)
+    check("the engine is told", dll.params.get(mod.PARAM_WIDEBAND), 1)
+    check("and says so", engine.wideband, True)
+    check("no player is built for it", len(players), 1)
+    check("turning it off is taken", engine.setWideband(False), True)
+    check("the engine is told that too", dll.params.get(mod.PARAM_WIDEBAND), 0)
+    engine.close()
 
-    check("a level is taken by name", engine.setBoost("2"), True)
-    out = array.array("h")
-    out.frombytes(engine._boosted(raw))
-    check("quiet samples are doubled", list(out[:5]), [0, 2000, -2000, 20000, -20000])
-    check("the loudest are kept below full scale and keep their sign",
-          (0 < out[5] <= 32767, -32768 <= out[6] < 0), (True, True))
-    check("and stay symmetric", out[5], -out[6] - 0 if out[6] != -32768 else out[5])
-    check("a name that is no level is refused", engine.setBoost("9"), False)
-    check("and leaves the gain where it was", engine.boost, 2.0)
+    # A library from before the setting answers minus one, as for any
+    # parameter it does not have.
+    dll = FakeDll()
+    players = []
+    mod = engine_module(dll, players)
+    engine = mod.Engine(lambda index: None)
+    engine.open()
+    dll.refuse = mod.PARAM_WIDEBAND
+    check("an older library's refusal is reported",
+          engine.setWideband(True), False)
+    check("and the setting stays off", engine.wideband, False)
     engine.close()
 
 
-def preset_checks():
-    """Choosing who speaks keeps the rate and the volume, and nothing else."""
+def pause_mode_checks():
+    """Which pauses are shortened is a setting the library keeps."""
     dll = FakeDll()
     players = []
     mod = engine_module(dll, players)
     engine = mod.Engine(lambda index: None)
     engine.open()
 
-    engine.setVoiceParam(mod.VOICE_SPEED, 180)
-    engine.setVoiceParam(mod.VOICE_VOLUME, 77)
-    engine.setVoiceParam(mod.VOICE_PITCH, 12)
-    engine.selectPreset(3)
-    check("the rate survives a change of preset",
-          engine.voiceParams[mod.VOICE_SPEED], 180)
-    check("and so does the volume", engine.voiceParams[mod.VOICE_VOLUME], 77)
-    check("the engine is told them, not only the layer",
-          (dll.voiceParams[mod.VOICE_SPEED], dll.voiceParams[mod.VOICE_VOLUME]),
-          (180, 77))
-    check("but the rest is the preset's own",
-          engine.voiceParams[mod.VOICE_PITCH], VOICE_PARAMS[mod.VOICE_PITCH])
-    before = len([c for c in dll.calls if c[0] == "eciCopyVoice"])
-    engine.selectPreset(99)
-    check("a preset the language has not is not copied",
-          len([c for c in dll.calls if c[0] == "eciCopyVoice"]), before)
+    check("it starts where the library does", engine.pauseMode, 1)
+    check("asking for that again tells the engine nothing",
+          (engine.setPauseMode(1), mod.PARAM_PAUSE_MODE in dll.params), (True, False))
+    check("another is taken", engine.setPauseMode(2), True)
+    check("the engine is told", dll.params.get(mod.PARAM_PAUSE_MODE), 2)
+    check("and says so", engine.pauseMode, 2)
+    check("never is taken", engine.setPauseMode(0), True)
+    check("the engine is told that too", dll.params.get(mod.PARAM_PAUSE_MODE), 0)
+
+    dll.refuse = mod.PARAM_PAUSE_MODE
+    check("a refusal is reported", engine.setPauseMode(1), False)
+    check("and the setting stays as it was", engine.pauseMode, 0)
     engine.close()
-
-
-def dictionary_checks():
-    """A person's .dic files reach the engine, whole and by volume."""
-    import os
-    import shutil
-    import tempfile
-
-    folder = tempfile.mkdtemp()
-    try:
-        with open(os.path.join(folder, "ENUMAIN.DIC"), "wb") as f:
-            f.write(b"abc\tdef\n")
-        with open(os.path.join(folder, "enuroot.dic"), "wb") as f:
-            f.write(b"ghi\tjkl")           # no newline at the end
-        with open(os.path.join(folder, "enuabbr.dic"), "wb") as f:
-            f.write(b"")                    # nothing in it
-        with open(os.path.join(folder, "fraMain.dic"), "wb") as f:
-            f.write(b"x\ty\n")             # another language's
-
-        dll = FakeDll()
-        players = []
-        mod = engine_module(dll, players)
-        engine = mod.Engine(lambda index: None)
-        engine.dictDirectory = folder
-        engine.open()
-
-        loads = dll.named("eciLoadDict")
-        check("the files there are get loaded, by volume",
-              [c[3] for c in loads], [0, 1])
-        check("a dictionary is made and put in force first",
-              [c[0] for c in dll.calls if c[0] in ("eciNewDict", "eciSetDict",
-                                                    "eciLoadDict")],
-              ["eciNewDict", "eciSetDict", "eciLoadDict", "eciLoadDict"])
-        main = loads[0][4].decode()
-        check("the name is matched whatever its case",
-              os.path.basename(main).lower(), "enumain.dic")
-        root = loads[1][4].decode()
-        check("a file with no newline is read from a copy that has one",
-              os.path.abspath(root) != os.path.join(folder, "enuroot.dic"), True)
-        check("and the copy is gone afterwards", os.path.exists(root), False)
-
-        # Looked at again: nothing changed, nothing is done.
-        engine._dictChecked = 0.0
-        engine._checkDictionaries()
-        check("unedited files are not loaded again",
-              len(dll.named("eciLoadDict")), 2)
-
-        # An edit is noticed and loaded into a dictionary of its own.
-        with open(os.path.join(folder, "enumain.dic"), "ab") as f:
-            f.write(b"more\tstuff\n")
-        engine._dictChecked = 0.0
-        engine._checkDictionaries()
-        check("an edited file makes a new dictionary",
-              len(dll.named("eciNewDict")), 2)
-        check("and is loaded into it", len(dll.named("eciLoadDict")), 4)
-
-        # A name the engine cannot hold is never passed to it.
-        engine._dictState.clear()
-        engine.dictDirectory = os.path.join(folder, "x" * 100, "y" * 100, "z" * 100)
-        os.makedirs(engine.dictDirectory)
-        with open(os.path.join(engine.dictDirectory, "enumain.dic"), "wb") as f:
-            f.write(b"a\tb\n")
-        before = len(dll.named("eciLoadDict"))
-        engine._applyDictionaries()
-        check("a path too long for the engine is not loaded",
-              len(dll.named("eciLoadDict")), before)
-
-        # And an engine with no folder at all does nothing.
-        dll = FakeDll()
-        players = []
-        mod = engine_module(dll, players)
-        engine2 = mod.Engine(lambda index: None)
-        engine2.dictDirectory = None
-        engine2.open()
-        check("no folder, no dictionary", dll.named("eciNewDict"), [])
-        engine2.close()
-        engine.close()
-    finally:
-        shutil.rmtree(folder, ignore_errors=True)
 
 
 def stall_checks():
@@ -663,6 +616,124 @@ def idle_stall_checks():
     engine.close()
 
 
+def dictionary_checks():
+    """Which files a language's dictionary is read from, in what order, and
+    when it is read again."""
+    dll = FakeDll()
+    players = []
+    mod = engine_module(dll, players)
+    engine = mod.Engine(lambda index: None)
+    engine.open()
+    # The watchdog looks for changed files on its own; held off here, so that
+    # what the checks below call is all that reads anything.
+    engine._dictionaryLooked = time.monotonic() + 1e9
+
+    tmp = tempfile.mkdtemp(prefix="openevv-dicts-")
+    managed, personal, own, empty = (
+        os.path.join(tmp, n) for n in ("managed", "personal", "own", "empty"))
+    for folder in (managed, personal, own, empty):
+        os.makedirs(folder)
+
+    def write(folder, name, data):
+        with open(os.path.join(folder, name), "wb") as f:
+            f.write(data)
+
+    write(managed, "ENUmain.dic", b"one\tmanaged one\r\n")
+    write(managed, "ENURoot.dic", b"two\tmanaged two\r\n")
+    write(personal, "enuroot.dic", b"two\tpersonal two")
+    write(own, "enuroot.dic", b"three\town three\r\n")
+    write(own, "deumain.dic", b"vier\teigene vier\r\n")
+    write(own, "notes.txt", b"not a dictionary\r\n")
+
+    try:
+        engine.setDictionaryFolders((managed, personal, own))
+        check("one dictionary for the language in force",
+              len(dll.named("eciNewDict")), 1)
+        check("each volume read once, from every folder that has it, in order,"
+              " each file ended with a line end",
+              [(v, data) for _d, v, data, _p in dll.dictFiles],
+              [(0, b"one\tmanaged one\r\n"),
+               (1, b"two\tmanaged two\r\ntwo\tpersonal two\r\n"
+                   b"three\town three\r\n")])
+        check("and put in force", dll.named("eciSetDict")[-1][2], 0x5001)
+        check("what the engine read is not left behind",
+              [os.path.exists(os.fsdecode(p)) for *_x, p in dll.dictFiles],
+              [False, False])
+
+        before = len(dll.calls)
+        engine.setDictionaryFolders((managed, personal, own))
+        check("the same folders asked for again read nothing",
+              len(dll.calls), before)
+
+        engine.languages = [0x10000, 0x40000]
+        engine.setLanguage(0x40000)
+        check("another language gets a dictionary of its own when it is"
+              " spoken", len(dll.named("eciNewDict")), 2)
+        check("from its own files", dll.dictFiles[-1][1:3],
+              (0, b"vier\teigene vier\r\n"))
+        made = len(dll.named("eciNewDict"))
+        engine.setLanguage(0x10000)
+        check("and the first is put back rather than read again on the way"
+              " back", (len(dll.named("eciNewDict")),
+                        dll.named("eciSetDict")[-1][2]), (made, 0x5001))
+
+        check("nothing has changed", engine.dictionariesChanged(), False)
+        write(own, "enuroot.dic", b"three\town three, changed\r\n")
+        check("a file that changes is seen to", engine.dictionariesChanged(),
+              True)
+        calls = len(dll.calls)
+        engine.refreshDictionaries()
+        after = dll.calls[calls:]
+        check("reading again takes every dictionary out of force first",
+              after[0], ("eciSetDict", HANDLE, None))
+        check("and gives both back",
+              sorted(c[2] for c in after if c[0] == "eciDeleteDict"),
+              [0x5001, 0x5002])
+        check("then reads the language in force with the change in it",
+              dll.dictFiles[-1][1:3],
+              (1, b"two\tmanaged two\r\ntwo\tpersonal two\r\n"
+                  b"three\town three, changed\r\n"))
+        check("and is content after", engine.dictionariesChanged(), False)
+
+        write(personal, "enuabbr.dic", b"WWII\tworld war two\r\n")
+        check("a file that appears is seen to", engine.dictionariesChanged(),
+              True)
+
+        queued = []
+        engine.control, control = queued.append, engine.control
+        engine._dictionaryLooked = 0.0
+        engine._watchDictionaries()
+        check("the watchdog queues the reading rather than doing it",
+              [[fn.__name__ for fn, _a in b] for b in queued],
+              [["refreshDictionaries"]])
+        engine._dictionaryLooked = 0.0
+        engine._watchDictionaries()
+        check("and queues it once while it waits", len(queued), 1)
+        engine.control = control
+        engine.refreshDictionaries()
+
+        made = len(dll.named("eciNewDict"))
+        engine.setDictionaryFolders((empty,))
+        check("folders with nothing in them make no dictionary",
+              len(dll.named("eciNewDict")), made)
+        check("and leave none in force", dll.named("eciSetDict")[-1][2], None)
+
+        dll.loadAnswer = 6
+        sequence.LOGGED["error"][:] = []
+        engine.setDictionaryFolders((own,))
+        check("a file the engine refuses is said in the log and not raised",
+              any("would not read" in e for e in sequence.LOGGED["error"]),
+              True)
+        dll.loadAnswer = 0
+
+        engine.close()
+        ends = [c[0] for c in dll.calls if c[0] in ("eciDeleteDict", "eciDelete")]
+        check("the dictionaries are given back before the instance",
+              ends[-2:], ["eciDeleteDict", "eciDelete"])
+    finally:
+        shutil.rmtree(tmp, True)
+
+
 def main():
     dll = FakeDll()
     players = []
@@ -852,12 +923,13 @@ def main():
     check("and the player was closed", player.closed, 1)
 
     control_checks()
+    restore_checks()
     samplerate_checks()
-    boost_checks()
-    preset_checks()
-    dictionary_checks()
+    wideband_checks()
+    pause_mode_checks()
     stall_checks()
     idle_stall_checks()
+    dictionary_checks()
 
     # A Thread subclass shares Thread's namespace, so this holds the engine to
     # not using any name the standard library's Thread does.

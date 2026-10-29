@@ -25,7 +25,6 @@
 #include <stdint.h>
 #include "evv_abi.h"
 #include "evv_arena.h"
-#include "eci_nfix.h"
 
 
 typedef struct { int32_t packed; char text[12]; char pad_10[4]; }
@@ -533,21 +532,6 @@ static int32_t runThroughFilters(TextFilter *f, char *from, char *to,
     }
     filtered = stw_filterText(f->thread, copy, 0);
     n = filtered ? (uint32_t)strlen(filtered) : 0;
-
-    /* The enye, said the way it sounds (eci_nfix.c). It is plain text, so
-       it is done whether or not annotations are on. */
-    if (filtered != 0 && nfix_wanted(currentLanguage(f))) {
-        char *own = nfix_apply(filtered);
-
-        if (own != 0) {
-            err = tf_processText(f, own, (uint32_t)strlen(own), flag);
-            nfix_free(own);
-            if (copy != 0)
-                cpp_delete(copy);
-            return err;
-        }
-    }
-
     err = tf_processText(f, filtered, n, flag);
     if (copy != 0)
         cpp_delete(copy);

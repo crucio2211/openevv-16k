@@ -1,5 +1,5 @@
 {
-  description = "openevv - a portable Eloquence / Embedded ViaVoice";
+  description = "OpenEVV - IBM's Embedded ViaVoice, the Eloquence engine, rebuilt as portable C";
 
   # The channel tarball rather than a github rev, so this shares the binary
   # cache the machine already populated instead of rebuilding gcc.
@@ -85,6 +85,11 @@
           pkgs.gnumake
           pkgs.python3
 
+          # The rules as C are written again whole when anything they are
+          # made from changes, and most of the files come out as they were;
+          # this hands back the object for one it has compiled before.
+          pkgs.ccache
+
           # The Speech Dispatcher output module compiles against Speech
           # Dispatcher's own headers and links its out-of-tree module helper.
           # Headers and a library, nothing else: the module hands its samples
@@ -98,7 +103,7 @@
         ];
 
         shellHook = ''
-          export EVV_ARCHIVE=/mnt/storage/Software/eloquence-archive
+          export EVV_ARCHIVE=/mnt/storage/Software/speech/eloquence-archive
           # The cross gcc is built against mcfgthreads but nothing puts it on
           # the link path outside a real cross stdenv. Referenced by path
           # rather than as a package because nixpkgs splicing would otherwise

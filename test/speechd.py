@@ -6,6 +6,7 @@ import select
 import struct
 import subprocess
 import sys
+import tempfile
 
 
 class ModuleProcess:
@@ -229,18 +230,23 @@ def main():
         print("speechd: the Western set's own punctuation", flush=True)
         # A dash, an ellipsis, the euro sign and curly quotes are bytes of the
         # Windows Western set that Latin-1 has not got. Taken as Latin-1 they
-        # became question marks, and the engine read "question mark" for each.
-        # This instance has spoken before, so its samples are not a fresh
-        # engine's and cannot be held against one; what can be held is that
-        # the same sentence with the question marks in it is far longer.
+        # became question marks. A question mark among words is punctuation in
+        # English now, as it is in ETI's 6.1, and so are the dash and the
+        # quotes, so what tells the two apart is the euro sign: read as euros
+        # where it arrived, and a pause where a question mark stood in for it.
+        # All of them fail together if the conversion is wrong. This instance
+        # has spoken before, so its samples are not a fresh engine's and
+        # cannot be held against one; what can be held is that the sentence
+        # with its prices in it is clearly the longer.
         module.set(punctuation_mode="all")
-        western = "It costs \u20ac5 \u2013 \u201cyes\u201d\u2026 more \u2014 less."
-        asked = "It costs ?5 ? ?yes?? more ? less."
+        western = ("It costs \u20ac5, \u20ac6, \u20ac7, \u20ac8 or \u20ac9 "
+                   "\u2013 \u201cyes\u201d\u2026 more \u2014 less.")
+        asked = "It costs ?5, ?6, ?7, ?8 or ?9 ? ?yes?? more ? less."
         westernAudio, _, _, event = module.speak(western)
         assert event == "702 END"
         askedAudio, _, _, event = module.speak(asked)
         assert event == "702 END"
-        assert len(westernAudio) * 3 < len(askedAudio) * 2, (
+        assert len(askedAudio) * 11 < len(westernAudio) * 10, (
             "Western punctuation reached the engine as question marks "
             f"({len(westernAudio)} versus {len(askedAudio)} PCM bytes)"
         )
@@ -394,7 +400,41 @@ def main():
     finally:
         result = module.close()
     assert result == 0
-    print("speechd: protocol, voices, settings, audio, marks, stop and pause passed")
+
+    print("speechd: the wideband voice", flush=True)
+    wideDir = tempfile.mkdtemp()
+    wideConfig = os.path.join(wideDir, "openevv.conf")
+    with open(wideConfig, "w", encoding="utf-8") as out:
+        out.write("Wideband 1\n")
+    module = ModuleProcess(binary, wideConfig)
+    try:
+        module.send("INIT\n")
+        module.expect(b"299-OpenEVV initialized\n")
+        module.expect(b"299 OK LOADED SUCCESSFULLY\n")
+        module.command_with_data(
+            "AUDIO",
+            ["audio_output_method=server"],
+            b"207 OK RECEIVING AUDIO SETTINGS\n",
+        )
+        module.expect(b"203 OK AUDIO INITIALIZED\n")
+        module.set(voice="male1", language="en-US", synthesis_voice="NULL")
+        audio, metadata, _, event = module.speak(text)
+        assert event == "702 END"
+        assert metadata["sample_rate"] == 22050
+        direct = subprocess.check_output([
+            directBinary, "-v", "1", "-W", "-R", "22050", "-o", "-",
+            direct_text,
+        ])
+        assert audio == direct[44:], (
+            "the wideband voice through Speech Dispatcher is not the one "
+            f"evv makes ({len(audio)} versus {len(direct) - 44} PCM bytes)"
+        )
+    finally:
+        result = module.close()
+        os.unlink(wideConfig)
+        os.rmdir(wideDir)
+    assert result == 0
+    print("speechd: protocol, voices, settings, audio, marks, stop, pause and the wideband voice passed")
 
 
 if __name__ == "__main__":

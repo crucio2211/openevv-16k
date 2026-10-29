@@ -47,9 +47,7 @@
 # player means the engine stops producing, which is how a long passage is
 # synthesised at the speed it is spoken instead of all at once into memory.
 
-import array
 import ctypes
-import math
 import os
 import queue
 import sys
@@ -67,91 +65,31 @@ from logHandler import log
 #: and it stays the default for that reason and no other.
 SAMPLE_RATE = 11025
 
-#: The sample rates the add-on offers: the setting the engine takes and the
-#: rate in hertz it comes to. These are IBM's own numbers: nought is eight
-#: thousand, one is eleven thousand and twenty five, and three is sixteen
-#: thousand.
+#: The rates the library offers: the setting the engine takes and the rate in
+#: hertz it comes to. IBM shipped the first two and numbered the next two;
+#: the last two are this port's.
 #:
-#: Sixteen thousand is synthesised outright, with the noise of the frication
-#: left open to the whole band (see src/eci/api/eci_env.c and
-#: src/klatt/klatt_fx.c), and not raised from eleven thousand and twenty
-#: five. Ordered by rate, so a reader is offered them in the order a person
-#: thinks of them.
+#: Above eleven thousand the engine still runs at eleven thousand and twenty
+#: five and the rate is raised from there, so choosing a higher rate never
+#: changes which voice it is. What it buys a reader is an audio device handed
+#: something it wants without resampling it again on the way out.
+#:
+#: The raising is a windowed sinc, so what a reader hears at any of these is
+#: the eleven thousand voice with the images taken out rather than left in;
+#: EVV_UPSAMPLE has the cheaper ways for anyone who wants the old aliased
+#: sound, and none to synthesise at the rate outright, which sounds worse
+#: because the frication comes from a generator that makes one value per
+#: output sample. Ordered by rate rather than by number so a reader is
+#: offered them in the order a person thinks of them.
 SAMPLE_RATES = (
 	(0, 8000),
 	(1, 11025),
 	(3, 16000),
+	(2, 22050),
+	(4, 32000),
+	(5, 44100),
+	(6, 48000),
 )
-
-#: The volume boost levels: the name a setting carries and the gain it
-#: stands for. The engine's own volume stops at a hundred, and at a hundred
-#: the voice is still well under what the audio device can take, so a boost
-#: is applied to the samples on their way to the player.
-BOOST_LEVELS = (
-	("0", 1.0),
-	("1", 1.5),
-	("2", 2.0),
-	("3", 3.0),
-)
-
-#: Where a boosted sample starts to be compressed rather than cut off. Below
-#: it the gain is plain; above it the excess is folded smoothly towards full
-#: scale, so a loud vowel is rounded off and does not crackle.
-BOOST_KNEE = 24000
-
-#: The user's dictionaries: the volume the engine numbers, and what a file
-#: for it is called after the language's own three letters, as in
-#: enumain.dic, enuroot.dic and enuabbr.dic. The last volume is only for the
-#: languages written in another script.
-DICT_VOLUMES = ((0, "main"), (1, "root"), (2, "abbr"), (3, "mainext"))
-
-#: The three letters a language's files start with, by its number.
-DICT_PREFIXES = {
-	0x10000: "enu",
-	0x10001: "eng",
-	0x20000: "esp",
-	0x20001: "esm",
-	0x30000: "fra",
-	0x30001: "frc",
-	0x40000: "deu",
-	0x50000: "ita",
-	0x80000: "jpn",
-	0x110000: "pol",
-}
-
-#: The engine keeps the name of a dictionary file in 264 bytes and does not
-#: look at how long the name it is handed is, so a longer one would write
-#: over whatever sits beside it inside the reader. Nothing longer than this
-#: is ever passed.
-DICT_PATH_ROOM = 240
-
-#: The engine reads the name in the machine's own code page.
-DICT_PATH_CODEC = "mbcs" if os.name == "nt" else "utf-8"
-
-#: How often, at most, the files are looked at to see whether one was edited.
-DICT_RECHECK = 2.0
-
-
-def dictionaryDirectory():
-	"""Where a person puts their dictionaries: in the reader's own settings,
-	so that updating the add-on does not take them away."""
-	try:
-		import globalVars
-
-		base = globalVars.appArgs.configPath
-	except Exception:  # noqa: BLE001
-		return None
-	return os.path.join(base, "openevv", "dictionaries") if base else None
-
-
-def _enginePath(path):
-	"""The name as the engine can take it, or None when it cannot be."""
-	try:
-		raw = os.path.abspath(path).encode(DICT_PATH_CODEC)
-	except (UnicodeError, LookupError):
-		return None
-	return raw if len(raw) <= DICT_PATH_ROOM else None
-
 
 #: How many samples the library is given room for in one go.
 FRAME = 2048
@@ -196,6 +134,14 @@ PARAM_DICTIONARY = 3
 PARAM_SAMPLE_RATE = 5
 PARAM_REAL_WORLD = 8
 PARAM_LANGUAGE = 9
+#: Ours rather than IBM's: the wideband voice above 11,025.
+PARAM_WIDEBAND = 32
+#: Ours as well: which pauses the engine shortens. Nought none, one where text
+#: stops without punctuation, which is the library's default, two at every
+#: mark as well.
+PARAM_PAUSE_MODE = 33
+PAUSE_MODES = (0, 1, 2)
+DEFAULT_PAUSE_MODE = 1
 
 # A voice's, likewise.
 VOICE_GENDER = 0
@@ -230,21 +176,6 @@ CONTROL = 1
 #: told them; this is only how many to ask about.
 VOICE_FIRST = 1
 VOICE_LAST = 8
-
-#: What Eloquence's eight presets have always been called, which is what a
-#: person who has used it knows them by. The engine's own names for them
-#: ("Adult Male 1") say what they are and not who they are, and they are the
-#: same eight in every language, so these are the names of the variants.
-VARIANT_NAMES = {
-	1: "Reed",
-	2: "Shelley",
-	3: "Bobby",
-	4: "Rocko",
-	5: "Glen",
-	6: "Sandy",
-	7: "Grandma",
-	8: "Grandpa",
-}
 
 #: What locale each of IBM's languages is, since the library answers with the
 #: number and the reader wants a locale. The number is a family in the third
@@ -321,6 +252,102 @@ _INSTEAD = {
 # backtick made here would get past the driver's own filtering of annotations.
 _INSTEAD.update({chr(n): chr(n - 0xfee0) for n in range(0xff01, 0xff5f)
 	if n != 0xff40})
+
+
+#: The three letters a dictionary file's name starts with for each language.
+#: They are Windows' own short names for the languages, which is where IBM's
+#: drivers got enu, eng and deu, and so they are the names the community's
+#: files already carry. Polish, which IBM never shipped, takes Windows' plk on
+#: the same terms.
+DICTIONARY_CODES = {
+	0x10000: "enu",
+	0x10001: "eng",
+	0x20000: "esp",
+	0x20001: "esm",
+	0x30000: "fra",
+	0x30001: "frc",
+	0x40000: "deu",
+	0x50000: "ita",
+	0x80000: "jpn",
+	0x110000: "plk",
+}
+
+#: The engine's three volumes, as a file's name says them.
+DICTIONARY_VOLUMES = (("main", 0), ("root", 1), ("abbr", 2))
+
+#: How long a path the engine will take, terminator and all. It copies the
+#: name into a buffer this size.
+PATH_ROOM = 0x104
+
+#: How often to look for a dictionary file that has changed, in seconds.
+DICTIONARY_CHECK_EVERY = 2.0
+
+
+def dictionaryFiles(folders, language):
+	"""What a language's dictionary is read from: for each volume, its file in
+	each folder that has one, in the folders' order.
+
+	Matched without regard to case. The community's files are called
+	ENURoot.dic and IBM's drivers ask for enuroot.dic, which is one file on
+	Windows and two names that miss each other anywhere else.
+	"""
+	code = DICTIONARY_CODES.get(language)
+	found = []
+	if code is None:
+		return found
+	listed = []
+	for folder in folders:
+		try:
+			listed.append((folder, sorted(os.listdir(folder))))
+		except OSError:
+			continue
+	for slot, volume in DICTIONARY_VOLUMES:
+		want = code + slot + ".dic"
+		paths = []
+		for folder, names in listed:
+			for name in names:
+				if name.lower() == want:
+					paths.append(os.path.join(folder, name))
+					break
+		if paths:
+			found.append((volume, tuple(paths)))
+	return found
+
+
+def _stamp(files):
+	"""What the files were when they were read, to tell when one changes."""
+	out = []
+	for _volume, paths in files:
+		for path in paths:
+			try:
+				st = os.stat(path)
+			except OSError:
+				continue
+			out.append((path, st.st_mtime_ns, st.st_size))
+	return tuple(out)
+
+
+def _pathBytes(path):
+	"""A path as the engine can open it, or None.
+
+	The engine opens a file with the C library's fopen, which on Windows takes
+	the ANSI code page, so a folder named in letters outside it cannot be
+	handed over as it stands. Its short name is plain ASCII wherever the
+	volume keeps short names, and is asked for instead.
+	"""
+	if os.name != "nt":
+		return os.fsencode(path)
+	try:
+		return path.encode("mbcs")
+	except UnicodeEncodeError:
+		pass
+	room = ctypes.create_unicode_buffer(32768)
+	if ctypes.windll.kernel32.GetShortPathNameW(path, room, len(room)):
+		try:
+			return room.value.encode("mbcs")
+		except UnicodeEncodeError:
+			pass
+	return None
 
 
 def _nearestLatin(ch):
@@ -441,17 +468,11 @@ class Engine:
 		#: What the engine is running at, and therefore what the player is
 		#: built for. The two are moved together and never separately.
 		self.sampleRate = SAMPLE_RATE
-		#: How much louder than the engine made it the samples are made on
-		#: the way out, and the tables that do it, built once per gain.
-		self.boost = 1.0
-		self._boostTables = {}
-		#: Where the dictionaries are looked for, what was loaded for each
-		#: language (the files it came from and the dictionary made), which
-		#: dictionary is in force, and when the files were last looked at.
-		self.dictDirectory = dictionaryDirectory()
-		self._dictState = {}
-		self._dictInForce = None
-		self._dictChecked = 0.0
+		#: Whether the wideband voice is on. It changes what the engine makes
+		#: above eleven thousand and twenty five, not the rate it hands over,
+		#: so the player stays as it is.
+		self.wideband = False
+		self.pauseMode = DEFAULT_PAUSE_MODE
 		self.voiceNames = {}
 		#: Every language the library has, and the one in force.
 		self.languages = []
@@ -463,6 +484,14 @@ class Engine:
 		#: so that the driver can answer a settings dialog without calling
 		#: into the library from another thread.
 		self.voiceParams = {}
+		#: Where dictionaries are read from, in the order they are read.
+		self._dictionaryFolders = ()
+		#: Each language's dictionary once it has been spoken, or None where
+		#: it had no files, and what those files were when they were read.
+		self._dictionaries = {}
+		self._dictionaryStamps = {}
+		self._dictionaryRefreshing = False
+		self._dictionaryLooked = 0.0
 
 	# ---- what the driver asks of it ----------------------------------
 
@@ -659,6 +688,31 @@ class Engine:
 			outputDevice=config.conf["audio"]["outputDevice"],
 		)
 
+	def setWideband(self, enable):
+		"""Turn the wideband voice on or off, between utterances.
+
+		A library from before it existed refuses the setting, and the voice
+		stays as it was rather than the reader being told it changed.
+		"""
+		enable = bool(enable)
+		if enable == self.wideband:
+			return True
+		if self.setParam(PARAM_WIDEBAND, 1 if enable else 0) < 0:
+			log.error("openevv: the library has no wideband voice")
+			return False
+		self.wideband = enable
+		return True
+
+	def setPauseMode(self, mode):
+		"""Choose which pauses the engine shortens, between utterances."""
+		if mode == self.pauseMode:
+			return True
+		if self.setParam(PARAM_PAUSE_MODE, mode) < 0:
+			log.error("openevv: the library refused pause mode %r" % (mode,))
+			return False
+		self.pauseMode = mode
+		return True
+
 	def setSampleRate(self, hz):
 		"""Run the synthesiser at another rate, and move the player with it.
 
@@ -724,6 +778,22 @@ class Engine:
 		self._dll.eciSetVoiceParam(self._instance, 0, which, value)
 		self.voiceParams[which] = value
 
+	def restoreVoiceParams(self, which):
+		"""Put these settings back to what the reader chose.
+
+		An annotation in the text changes the voice itself and not only the
+		stretch it sits in, so an utterance cut off before its change back
+		leaves every utterance after it changed. What the reader chose is read
+		here, on this thread, because a setting asked for while the utterance
+		waited reaches voiceParams in the queue's order: read when the
+		utterance was handed over, the old value would be put back over it.
+		"""
+		for param in which:
+			if param in self.voiceParams:
+				self._dll.eciSetVoiceParam(
+					self._instance, 0, param, self.voiceParams[param]
+				)
+
 	def copyVoice(self, number):
 		if not self._dll.eciCopyVoice(self._instance, number, 0):
 			log.debugWarning("openevv: the engine refused voice %d" % number)
@@ -741,23 +811,11 @@ class Engine:
 		"""
 		if language == self.language or language not in self.languages:
 			return False
-		# Detach any dictionary before the language change. Handles are
-		# language-scoped; keeping one in force across the switch is what
-		# produced eciSetDict AVs (0xFFFFFFFFFFFFFFFF) in the field.
-		try:
-			if self._dictInForce is not None:
-				self._setDict(None)
-		except Exception:  # noqa: BLE001
-			log.debug("openevv: clear dict before language change", exc_info=True)
-			self._dictInForce = None
 		self.setParam(PARAM_LANGUAGE, language)
 		self.language = language
+		self._useDictionary(language)
 		self._readVoiceNames()
 		self._readVoiceParams()
-		try:
-			self._applyDictionaries()
-		except Exception:  # noqa: BLE001
-			log.error("openevv: the dictionaries would not load", exc_info=True)
 		return True
 
 	def selectLanguage(self, language, preset):
@@ -778,20 +836,117 @@ class Engine:
 		for which, value in kept.items():
 			self.setVoiceParam(which, value)
 
-	def selectPreset(self, number):
-		"""Speak as another of the eight, keeping the rate and the volume.
+	# ---- pronunciation dictionaries ----------------------------------
 
-		Copying a preset replaces all eight settings of the voice, the rate
-		among them. Who is speaking is a choice about the voice and not about
-		how fast it is going or how loud, so those two are put back.
+	def setDictionaryFolders(self, folders):
+		"""Read dictionaries from these folders from now on.
+
+		The same folders asked for again do nothing. NVDA applies every
+		setting on the way in and two of them lead here, and the community's
+		root file takes a fifth of a second to read.
 		"""
-		if number not in self.voiceNamesFor(self.language):
+		folders = tuple(folders)
+		if folders == self._dictionaryFolders:
 			return
-		kept = {w: self.voiceParams[w] for w in (VOICE_SPEED, VOICE_VOLUME)
-		        if w in self.voiceParams}
-		self.copyVoice(number)
-		for which, value in kept.items():
-			self.setVoiceParam(which, value)
+		self._dictionaryFolders = folders
+		self._reloadDictionaries()
+
+	def refreshDictionaries(self):
+		"""Read every dictionary again, because a file of one has changed."""
+		self._dictionaryRefreshing = False
+		self._reloadDictionaries()
+
+	def dictionariesChanged(self):
+		"""Whether a file a dictionary was read from has changed, appeared or
+		gone since. Safe from another thread: it reads the files and a copy
+		of what was recorded, and changes nothing."""
+		folders = self._dictionaryFolders
+		for language, stamp in dict(self._dictionaryStamps).items():
+			if _stamp(dictionaryFiles(folders, language)) != stamp:
+				return True
+		return False
+
+	def _reloadDictionaries(self):
+		self._dropDictionaries()
+		self._useDictionary(self.language)
+
+	def _dropDictionaries(self):
+		if any(self._dictionaries.values()):
+			# Out of force first, every language at once, so that nothing is
+			# left in force that is about to go.
+			self._dll.eciSetDict(self._instance, None)
+			for handle in self._dictionaries.values():
+				if handle:
+					self._dll.eciDeleteDict(self._instance, handle)
+		self._dictionaries.clear()
+		self._dictionaryStamps.clear()
+
+	def _useDictionary(self, language):
+		"""Put a language's dictionary in force, reading it the first time.
+
+		One a language, and kept. A dictionary belongs to the language in
+		force when it was made and the engine keeps it across a change of
+		language, so a German quotation in an English page costs the English
+		dictionary nothing when English comes back.
+		"""
+		if language in self._dictionaries:
+			handle = self._dictionaries[language]
+			if handle:
+				self._dll.eciSetDict(self._instance, handle)
+			return
+		files = dictionaryFiles(self._dictionaryFolders, language)
+		self._dictionaryStamps[language] = _stamp(files)
+		self._dictionaries[language] = None
+		if not files:
+			return
+		handle = self._dll.eciNewDict(self._instance)
+		if not handle:
+			log.error("openevv: the engine would not make a dictionary")
+			return
+		self._dictionaries[language] = handle
+		for volume, paths in files:
+			self._loadVolume(handle, volume, paths)
+		self._dll.eciSetDict(self._instance, handle)
+		log.debug("openevv: dictionary for 0x%x from %s"
+		          % (language, ", ".join(p for _v, paths in files for p in paths)))
+
+	def _loadVolume(self, handle, volume, paths):
+		"""Read one volume from every file it has, as one file.
+
+		Joined because of three things the engine does. It sizes a volume's
+		table from the first file read into it and never again, so a short
+		file of the reader's own ahead of the community's seventy thousand
+		root words would leave every lookup walking a few very long chains.
+		It drops a last line with no line end after it, so each file is given
+		one. And a temporary file has a name the engine can be handed when the
+		folder a file came from has not.
+		"""
+		fd, joined = tempfile.mkstemp(prefix="openevv-", suffix=".dic")
+		try:
+			with os.fdopen(fd, "wb") as out:
+				for path in paths:
+					try:
+						with open(path, "rb") as f:
+							data = f.read()
+					except OSError:
+						log.error("openevv: cannot read %s" % path, exc_info=True)
+						continue
+					out.write(data)
+					if data and not data.endswith(b"\n"):
+						out.write(b"\r\n")
+			name = _pathBytes(joined)
+			if name is None or len(name) >= PATH_ROOM:
+				log.error("openevv: the engine cannot be handed %s" % joined)
+				return
+			answer = self._dll.eciLoadDict(self._instance, handle, volume, name)
+			if answer:
+				log.error("openevv: the engine would not read %s, answering %d"
+				          % (", ".join(paths), answer))
+		finally:
+			try:
+				os.remove(joined)
+			except OSError:
+				pass
 
 	def voiceNamesFor(self, language):
 		"""The eight presets of one language, whichever is in force."""
@@ -849,9 +1004,11 @@ class Engine:
 			# A pause is meant to stop the player draining, so blocking on one
 			# is not a stall. Nor is a wait that has not gone on long enough.
 			if since is None or self._paused:
+				self._watchDictionaries()
 				continue
 			waited = time.monotonic() - since
 			if waited < STUCK_AFTER:
+				self._watchDictionaries()
 				continue
 			log.error("openevv: the engine's thread has been in the player's %s"
 			          " for %.1f seconds with no pause asked for; abandoning the"
@@ -865,6 +1022,28 @@ class Engine:
 			# Nobody asked for this silence, so nobody is resetting on the far
 			# side of it: say the utterance finished.
 			self._finish()
+
+	def _watchDictionaries(self):
+		"""Read the dictionaries again if a file of theirs has changed.
+
+		Here rather than on the engine's thread, which spends its time inside
+		the engine or waiting for work and so has no moment of its own to
+		look; the reading is queued for it like any setting.
+		"""
+		now = time.monotonic()
+		if now - self._dictionaryLooked < DICTIONARY_CHECK_EVERY:
+			return
+		self._dictionaryLooked = now
+		if self._dictionaryRefreshing:
+			return
+		try:
+			changed = self.dictionariesChanged()
+		except Exception:  # noqa: BLE001
+			log.error("openevv: could not look at the dictionaries", exc_info=True)
+			return
+		if changed:
+			self._dictionaryRefreshing = True
+			self.control([(self.refreshDictionaries, ())])
 
 	# ---- the thread --------------------------------------------------
 
@@ -892,8 +1071,6 @@ class Engine:
 				self._work.task_done()
 				continue
 			try:
-				if kind == SPEECH:
-					self._checkDictionaries()
 				for fn, args in batch:
 					fn(*args)
 			except Exception:  # noqa: BLE001
@@ -950,13 +1127,17 @@ class Engine:
 		dll.eciSynthesize.argtypes = [ctypes.c_void_p]
 		dll.eciSynchronize.argtypes = [ctypes.c_void_p]
 		dll.eciVersion.argtypes = [ctypes.c_char_p]
-		dll.eciSpeaking.argtypes = [ctypes.c_void_p]
 		dll.eciNewDict.restype = ctypes.c_void_p
 		dll.eciNewDict.argtypes = [ctypes.c_void_p]
 		dll.eciSetDict.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
 		dll.eciLoadDict.argtypes = [
-			ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int, ctypes.c_char_p,
+			ctypes.c_void_p,
+			ctypes.c_void_p,
+			ctypes.c_int,
+			ctypes.c_char_p,
 		]
+		dll.eciDeleteDict.restype = ctypes.c_void_p
+		dll.eciDeleteDict.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
 
 		# Asked with no room, which answers how many there are, and again with
 		# room. Only US English is in the library, but ask rather than assume.
@@ -1007,22 +1188,12 @@ class Engine:
 
 		self._readVoiceParams()
 
-		# A folder to put dictionaries in, made so that it can be found.
-		if self.dictDirectory:
-			try:
-				os.makedirs(self.dictDirectory, exist_ok=True)
-			except OSError:
-				log.debugWarning("openevv: no dictionary folder", exc_info=True)
-		try:
-			self._applyDictionaries()
-		except Exception:  # noqa: BLE001
-			log.error("openevv: the dictionaries would not load", exc_info=True)
-
 		self.player = self._newPlayer(self.sampleRate)
 
 	def _finishThread(self):
 		try:
 			if self._instance is not None:
+				self._dropDictionaries()
 				self._dll.eciDelete(self._instance)
 		except Exception:  # noqa: BLE001
 			log.error("openevv: the engine would not shut down", exc_info=True)
@@ -1057,254 +1228,9 @@ class Engine:
 			log.error("openevv: the engine's callback failed", exc_info=True)
 			return DATA_PROCESSED
 
-	# ---- the user's dictionaries -------------------------------------
-
-	def _dictFolders(self):
-		"""Where a dictionary is looked for.
-
-		Two places, in order. The reader's own, in their settings,
-		# so that updating the add-on does not take a dictionary
-		# away; and the add-on's own folder, beside the engine, in
-		# the arrangement the IBMTTS driver uses, so that a
-		# dictionary dropped beside the engine is found with no
-		# setting at all. The reader's own is looked at first, so
-		# that where both hold a dictionary for the same volume it
-		# is the reader's that is read.
-		"""
-		folders = []
-		if self.dictDirectory:
-			folders.append(self.dictDirectory)
-		folders.append(os.path.dirname(os.path.abspath(__file__)))
-		return folders
-
-	def _dictFiles(self, language):
-		"""The dictionary files there are for a language, by volume."""
-		prefix = DICT_PREFIXES.get(language)
-		if not prefix:
-			return {}
-		found = {}
-		for folder in self._dictFolders():
-			try:
-				names = {n.lower(): n for n in os.listdir(folder)}
-			except OSError:
-				continue
-			for volume, kind in DICT_VOLUMES:
-				if volume in found:
-					continue
-				real = names.get("%s%s.dic" % (prefix, kind))
-				if real:
-					found[volume] = os.path.join(folder, real)
-		return found
-
-	def _dictSignature(self, files):
-		"""What the files are right now, so that an edit is noticed."""
-		signature = []
-		for volume, path in sorted(files.items()):
-			try:
-				st = os.stat(path)
-			except OSError:
-				continue
-			signature.append((volume, path, st.st_mtime_ns, st.st_size))
-		return tuple(signature)
-
-	def _dictReadable(self, path):
-		"""(name for the engine, copy to remove afterwards), or (None, None).
-
-		The engine drops the last line of a file that does not end in a
-		newline, so such a file is loaded from a copy that does. A name it
-		cannot take, by length or by characters, is passed over and logged.
-		"""
-		try:
-			with open(path, "rb") as f:
-				data = f.read()
-		except OSError:
-			log.error("openevv: cannot read %s" % path, exc_info=True)
-			return None, None
-		if not data.strip():
-			return None, None
-		if data.endswith(b"\n"):
-			raw = _enginePath(path)
-			if raw is None:
-				log.error("openevv: the name of %s is too long or has characters "
-				          "the engine cannot be given; use a shorter profile path"
-				          % path)
-			return raw, None
-		try:
-			descriptor, copy = tempfile.mkstemp(suffix=".dic")
-			with os.fdopen(descriptor, "wb") as f:
-				f.write(data + b"\n")
-		except OSError:
-			log.error("openevv: no copy of %s" % path, exc_info=True)
-			return None, None
-		raw = _enginePath(copy)
-		if raw is None:
-			log.error("openevv: %s has no newline at the end and cannot be "
-			          "copied anywhere the engine can read; add one" % path)
-			os.remove(copy)
-			return None, None
-		return raw, copy
-
-	def _validDictHandle(self, handle):
-		"""Reject NULL and the all-ones pointer Windows returns on failure.
-
-		eciNewDict can fail with a value that is truthy in Python (-1 /
-		0xFFFFFFFFFFFFFFFF). Passing that to eciSetDict access-violates on
-		language switch (log: reading 0xFFFFFFFFFFFFFFFF).
-		"""
-		if handle is None:
-			return False
-		try:
-			h = int(ctypes.cast(handle, ctypes.c_void_p).value or 0)
-		except (TypeError, ValueError, OverflowError):
-			try:
-				h = int(handle)
-			except (TypeError, ValueError):
-				return False
-		if h == 0 or h == -1 or (h & 0xFFFFFFFFFFFFFFFF) == 0xFFFFFFFFFFFFFFFF:
-			return False
-		return True
-
-	def _setDict(self, handle):
-		"""Activate a user-dictionary handle, or None to clear.
-
-		Never pass a failed/stale handle into the DLL (AV on language change).
-		"""
-		if handle is not None and not self._validDictHandle(handle):
-			log.error("openevv: refusing invalid dictionary handle %r" % (handle,))
-			self._dictInForce = None
-			return
-		if self._dll is None or self._instance is None:
-			self._dictInForce = None
-			return
-		try:
-			# NULL is a valid "no dictionary" argument.
-			self._dll.eciSetDict(self._instance, handle)
-			self._dictInForce = handle
-		except OSError:
-			log.error("openevv: eciSetDict failed for handle %r" % (handle,),
-			          exc_info=True)
-			self._dictInForce = None
-			# Drop cached state that pointed at this handle.
-			for lang, state in list(self._dictState.items()):
-				if state and state[1] is handle:
-					del self._dictState[lang]
-
-	def _applyDictionaries(self):
-		"""Put in force the dictionaries there are for the language in force.
-
-		A dictionary belongs to the language it was made in, so each language
-		has its own, made the first time it is spoken in and made again when
-		one of its files has been edited or removed. The old one is not freed:
-		the engine's release of one is the thing in it least tried, and an edit
-		is rare.
-		"""
-		dll, instance, language = self._dll, self._instance, self.language
-		files = self._dictFiles(language)
-		signature = self._dictSignature(files)
-		known = self._dictState.get(language)
-
-		if known is None and not signature:
-			if self._dictInForce is not None:
-				self._setDict(None)
-			return
-		if known is not None and known[0] == signature:
-			handle = known[1]
-			if handle is not None and not self._validDictHandle(handle):
-				del self._dictState[language]
-				# fall through and rebuild
-			elif self._dictInForce != handle:
-				self._setDict(handle)
-				if handle is None or self._dictInForce == handle:
-					return
-				# set failed — drop cache and rebuild
-				self._dictState.pop(language, None)
-			else:
-				return
-		# Loading is refused while the engine is speaking; try again later.
-		if dll.eciSpeaking(instance):
-			return
-
-		if not signature:
-			self._setDict(None)
-			self._dictState[language] = ((), None)
-			return
-
-		handle = dll.eciNewDict(instance)
-		if not self._validDictHandle(handle):
-			log.error("openevv: the engine would not make a dictionary (handle=%r)"
-			          % (handle,))
-			return
-		self._setDict(handle)
-		for volume, path, _time, _size in signature:
-			raw, copy = self._dictReadable(path)
-			if raw is None:
-				continue
-			try:
-				answer = dll.eciLoadDict(instance, handle, volume, raw)
-			finally:
-				if copy is not None:
-					try:
-						os.remove(copy)
-					except OSError:
-						pass
-			if answer:
-				log.error("openevv: the engine answered %d loading %s"
-				          % (answer, path))
-			else:
-				log.debug("openevv: loaded %s" % path)
-		self._dictState[language] = (signature, handle)
-
-	def _checkDictionaries(self):
-		"""Look for an edited dictionary, not more often than every few
-		seconds, between one utterance and the next."""
-		now = time.monotonic()
-		if now - self._dictChecked < DICT_RECHECK:
-			return
-		self._dictChecked = now
-		try:
-			self._applyDictionaries()
-		except Exception:  # noqa: BLE001
-			log.error("openevv: the dictionaries would not reload", exc_info=True)
-
-	def setBoost(self, name):
-		"""Choose a boost level by its name. Anything else is left alone."""
-		for level, gain in BOOST_LEVELS:
-			if level == str(name):
-				self.boost = gain
-				return True
-		log.error("openevv: %r is not a volume boost level" % (name,))
-		return False
-
-	def _boostTable(self, gain):
-		"""What every sixteen-bit sample becomes at this gain, indexed by the
-		sample itself: a negative index counts from the end, so a negative
-		sample finds its own entry without being shifted first."""
-		table = self._boostTables.get(gain)
-		if table is None:
-			room = 32767.0 - BOOST_KNEE
-			table = []
-			for u in range(65536):
-				v = (u - 65536 if u >= 32768 else u) * gain
-				mag = abs(v)
-				if mag > BOOST_KNEE:
-					mag = BOOST_KNEE + room * math.tanh((mag - BOOST_KNEE) / room)
-				mag = int(round(mag))
-				table.append(max(-32768, min(32767, -mag if v < 0 else mag)))
-			self._boostTables[gain] = table
-		return table
-
-	def _boosted(self, audio):
-		gain = self.boost
-		if gain == 1.0 or not audio:
-			return audio
-		table = self._boostTable(gain)
-		samples = array.array("h")
-		samples.frombytes(audio)
-		return array.array("h", map(table.__getitem__, samples)).tobytes()
-
 	def _flush(self, last=False):
 		if self._held:
-			audio = self._boosted(bytes(self._held))
+			audio = bytes(self._held)
 			del self._held[:]
 			marks = self._pendingIndexes
 			self._pendingIndexes = []

@@ -40,6 +40,7 @@ from synthDriverHandler import (
 )
 
 from . import _openevv
+from . import _openevv_dictionaries as dictionaries
 
 #: What the engine's speed setting is worth at either end of the reader's
 #: nought to a hundred. The engine will take nought to two hundred and fifty,
@@ -74,114 +75,22 @@ BREAK_FACTORS = {10: 1, 43: 2, 60: 3, 75: 4, 85: 5}
 #: there: one measured message was 252,010 samples whole and the same 252,010
 #: samples in six pieces. This larger fallback is for a stretch with no
 #: sentence end, such as the 560-character Arabic case above.
-PIECE_CAP = 20
+PIECE_CAP = 500
 
 #: Where a piece may end: after a run of whitespace, so nothing is split
 #: inside a word and no annotation is separated from what it applies to.
 _BOUNDARY = re.compile(r"(\s+)")
 
+#: Which of the voice's settings each prosody command moves.
+_PROSODY_PARAMS = {
+	PitchCommand: _openevv.VOICE_PITCH,
+	RateCommand: _openevv.VOICE_SPEED,
+	VolumeCommand: _openevv.VOICE_VOLUME,
+}
+
 #: Closing marks which may follow sentence-final punctuation.
 _CLOSERS = "\"')]}\N{RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK}\N{RIGHT DOUBLE QUOTATION MARK}\N{RIGHT SINGLE QUOTATION MARK}"
 
-#: Repairs for the engine's own text-processing faults. The
-#: engine's rules fault on certain strings -- a crash word, a date
-#: it reads wrongly, a time it stops short of -- and these are the
-#: repairs the IBMTTS driver arrived at for this same engine. They
-#: are matched against the bytes a language reads, so a code set's
-#: own bytes are what is seen, and are applied after the reader's
-#: own backquote processing, so that a repair may say an
-#: annotation of its own.
-time_re = re.compile(br"(\d):(\d+):(\d+)")
-
-english_fixes = {
-	# A dictionary entry carrying the Mc prefix, which NVDA splits
-	# up, crashes the engine.
-	re.compile(br"\b(Mc)\s+([A-Z][a-z]|[A-Z][A-Z]+)"): br"\1\2",
-	# The date parser. Without this, "03 Marble" is read as
-	# "march threerd ble".
-	re.compile(br"\b(\d+) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)([a-z]+)"): br"\1  \2\3",
-	# UK formatted dates.
-	re.compile(br"\b(\d+)  (January|February|March|April|May|June|July|August|September|October|November|December)\b"): br"\1 \2",
-	# Crash words.
-	re.compile(br'c(ae|\xe6)sur(e)?', re.I): br'seizur',
-	re.compile(br"\b(|\d+|\W+)h'(r|v)[e]", re.I): br"\1h \2e",
-	re.compile(br"\b(\w+[bdfhjlmnqrvyz])(h[he]s)([abcdefghjklmnopqrstvwy]\w+)\b", re.I): br"\1 \2\3",
-	re.compile(br"\b(\w+[bdfhjlmnqrvyz])(h[he]s)(iron+[degins]?)", re.I): br"\1 \2\3",
-	re.compile(br"\b(\w+'{1,}[bcdfghjklmnpqrstvwxyz])'*(h+[he]s)([abcdefghijklmnopqrstvwy]\w+)\b", re.I): br"\1 \2\3",
-	re.compile(br"\b(\w+[bcdfghjklmnpqrstvwxyz])('{1,}h+[he]s)([abcdefghijklmnopqrstvwy]\w+)\b", re.I): br"\1 \2\3",
-	re.compile(br"(\d):(\d\d[snrt][tdh])", re.I): br"\1 \2",
-	re.compile(br"\b([bcdfghjklmnpqrstvwxz]+)'([bcdefghjklmnpqrstvwxz']+)'([drtv][aeiou]?)", re.I): br"\1 \2 \3",
-	re.compile(br"\b(you+)'(re)+'([drv]e?)", re.I): br"\1 \2 \3",
-	re.compile(br"(re|un|non|anti)cosp", re.I): br"\1kosp",
-	re.compile(br"(EUR[A-Z]+)(\d+)", re.I): br"\1 \2",
-	re.compile(br"\b(\d+|\W+)?(\w+\_+)?(\_+)?([bcdfghjklmnpqrstvwxz]+)?(\d+)?t+z[s]che", re.I): br"\1 \2 \3 \4 \5 tz sche",
-	re.compile(br"(juar)([a-z']{9,})", re.I): br"\1 \2",
-}
-spanish_fixes = {
-	# Euros.
-	re.compile(b'([\x80$]\\d{1,3})((\\s\\d{3})+\\.\\d{2})'): br'\1 \2',
-	# Numbers separated by a space are spoken together unless an
-	# extra space says otherwise, as with a three-digit second
-	# number: "3 456".
-	re.compile(b'(\\d+) (\\d{3})'): br'\1  \2',
-	# The ordinal feminine of thirteen or more digits ending in
-	# 1, 2, 3, 6, 7 or 9.
-	re.compile(br'(\d{12,}[123679])(\xaa)'): br'\1 \2',
-}
-french_fixes = {
-	# "n°", which is otherwise read out as a number.
-	re.compile(br'\bn\xb0', re.I): b'num\xe9ro',
-	# "quil" faults the engine, though what it should sound like
-	# depends on the context.
-	re.compile(br'(?<=anq)uil(?=l)', re.I): br'i',
-	re.compile(br'quil(?=\W)', re.I | re.L): br'kil',
-	# Function keys, "f1" to "f12", read as "1 franc" and so on.
-	re.compile(br'f(?=\s?\d)', re.I | re.L): br'f ',
-	# A capitalised Roman numeral followed by "e" or "eme", which
-	# NVDA splits: "IIIe" becomes "II Ie".
-	re.compile(br'\b([CDILMVX]+)(\s?)([CDILMVX]e)(me)?\b'): b'\\1\\3',
-	# A right parenthesis inside a word, always spoken whatever
-	# the punctuation level.
-	re.compile(br'(\w\))(?=\w)', re.I | re.L): br'\1 ',
-	re.compile(br'(n\s?vda)', re.I): b' \xe8nv\xe9d\xe9a ',
-	# A "y" that is sometimes lost entirely.
-	re.compile(br'([ou])y([bnp])', re.I): br"\1i\2",
-}
-german_fixes = {
-	# Crash words, each given the pause the engine wanted in the
-	# first place.
-	re.compile(br'dane-ben', re.I): br'dane `0 ben',
-	re.compile(br'dage-gen', re.I): br'dage `0 gen',
-	re.compile(br'(audio|macro|video)(-)(en[a-z]+)', re.I): br'\1 `0 \3',
-}
-
-#: The repairs for each of the engine's languages, by its number.
-#: Only the languages written in the Western code set are here,
-#: since a repair matched against another code set's bytes would be
-#: meaningless at best.
-_CRASH_FIXES = {
-	0x10000: english_fixes,
-	0x10001: english_fixes,
-	0x20000: spanish_fixes,
-	0x20001: spanish_fixes,
-	0x30000: french_fixes,
-	0x30001: french_fixes,
-	0x40000: german_fixes,
-}
-
-
-def resub(dct, s):
-	"""Every repair in a set, applied in turn."""
-	for pattern in dct:
-		s = pattern.sub(dct[pattern], s)
-	return s
-
-
-def _endsClause(text):
-	t = text.rstrip()
-	if not t: return False
-	while t and t[-1] in _CLOSERS: t = t[:-1]
-	return bool(t) and t[-1] in ",;:—"
 
 def _endsSentence(text):
 	"""Whether a word ends a sentence rather than a dotted number.
@@ -192,7 +101,9 @@ def _endsSentence(text):
 	wait on the next cancel. So a dot has to argue for itself.
 
 	An abbreviation and an initial are what it fails on. "Mr. Jones" split after
-	the dot measured 0.70 s longer than the same sentence whole, and "J. R. R.
+	the dot measured 0.70 s longer than the same sentence whole with
+	abbreviations expanded -- off, the engine ends a sentence there itself and
+	the split costs nothing -- and "J. R. R.
 	Tolkien" split at every initial measured 1.48 s longer than 3.72, which is
 	nearly half again. Two tests are enough for both, in any of the nine
 	languages: a word carrying a dot inside it is an abbreviation rather than a
@@ -215,11 +126,10 @@ def _endsSentence(text):
 
 class SynthDriver(SynthDriver):
 	name = "openevv"
-	description = "Eloquence (openevv)"
+	description = "OpenEVV"
 
 	supportedSettings = (
 		SynthDriver.VoiceSetting(),
-		SynthDriver.VariantSetting(),
 		SynthDriver.RateSetting(),
 		SynthDriver.RateBoostSetting(),
 		SynthDriver.PitchSetting(),
@@ -234,11 +144,29 @@ class SynthDriver(SynthDriver):
 		# Translators: Label for a setting in voice settings dialog.
 		BooleanDriverSetting("abbreviations", _("Expand a&bbreviations"), False),
 		# Translators: Label for a setting in voice settings dialog.
+		BooleanDriverSetting("phrasePrediction", _("Phrase predi&ction"), False),
+		DriverSetting(
+			"pauseMode",
+			# Translators: Label for a setting in voice settings dialog.
+			_("Shorten pa&uses"),
+			False,
+			defaultVal=str(_openevv.DEFAULT_PAUSE_MODE),
+		),
+		# Translators: Label for a setting in voice settings dialog.
 		BooleanDriverSetting("voiceTags", _("Allow backquote voice &tags"), False),
 		# Translators: Label for a setting in voice settings dialog.
 		DriverSetting("samplerate", _("Sa&mple rate"), False),
 		# Translators: Label for a setting in voice settings dialog.
-		DriverSetting("volumeBoost", _("Volume boos&ter"), False),
+		BooleanDriverSetting("wideband", _("&Wideband above 11 kHz"), False),
+		# Translators: Label for a setting in voice settings dialog.
+		DriverSetting("dictionarySet", _("Dictionary s&et"), False),
+		BooleanDriverSetting(
+			"personalDictionary",
+			# Translators: Label for a setting in voice settings dialog.
+			_("Use personal dictionary entrie&s"),
+			False,
+			defaultVal=True,
+		),
 	)
 
 	supportedCommands = {
@@ -259,12 +187,14 @@ class SynthDriver(SynthDriver):
 	def __init__(self):
 		self._rateBoost = False
 		self._abbreviations = False
+		self._phrasePrediction = False
 		self._voiceTags = False
-		self._volumeBoost = "0"
+		self._dictionarySet = dictionaries.NO_SET
+		self._personalDictionary = True
 		self._engine = _openevv.Engine(self._onIndexReached)
 		self._engine.open()
-		self._voice = str(self._engine.language)
-		self._variant = str(_openevv.VOICE_FIRST)
+		self._voice = self._voiceId(self._engine.language, _openevv.VOICE_FIRST)
+		self._applyDictionaries()
 		log.debug("openevv: engine version %s" % self._engine.version)
 
 	def terminate(self):
@@ -278,7 +208,11 @@ class SynthDriver(SynthDriver):
 		#: reader says is one piece; a long one is several, so that asking for
 		#: silence waits out a piece and not the whole of it.
 		pieces = []
-		batch = []
+		# Phrase prediction is the instance's own state and is said again at
+		# the head of every utterance rather than once: an utterance that set
+		# it can be dropped by a cancel before it starts, and nothing would
+		# then say it never happened.
+		batch = [(engine.addText, (b"`pp1 " if self._phrasePrediction else b"`pp0 ",))]
 		text = []
 		spelling = False
 		#: Prosody annotations which have not yet been restored to the reader's
@@ -303,12 +237,10 @@ class SynthDriver(SynthDriver):
 		saying = False
 		gathered = 0
 		sentence = False
-		clause = False
 
 		def flush():
 			if text:
 				joined = _openevv.textFor(speaking, "".join(text))
-				joined = self._anticrash(joined, speaking)
 				batch.append((engine.addText, (joined,)))
 				del text[:]
 
@@ -343,12 +275,10 @@ class SynthDriver(SynthDriver):
 					if part.strip():
 						saying = True
 						sentence = _endsSentence(part)
-						clause = _endsClause(part)
 					else:
-						if mayEndPiece() and (sentence or clause or gathered >= PIECE_CAP):
+						if mayEndPiece() and (sentence or gathered >= PIECE_CAP):
 							endPiece()
 						sentence = False
-						clause = False
 			elif isinstance(item, IndexCommand):
 				# An index has to sit between stretches of text rather than
 				# inside one, so what has been gathered goes first.
@@ -428,25 +358,24 @@ class SynthDriver(SynthDriver):
 		if switched:
 			engine.control([(engine.selectLanguage, (home, self._presetNow()))])
 
+		# The same for a rate, pitch or volume the sequence never changed back.
+		# NVDA ends an utterance after each spelled character and sends the
+		# change back as an utterance of its own, which the next keystroke
+		# cancels before it reaches here, so a typing rate set for one
+		# character would otherwise stay for everything after it.
+		if prosody:
+			engine.control([(
+				engine.restoreVoiceParams,
+				(tuple(sorted(_PROSODY_PARAMS[command] for command in prosody)),),
+			)])
+
 	def _processText(self, text):
 		if not self._voiceTags:
+			# A backtick starts an annotation, so ordinary text carrying one
+			# would be read as a command rather than spoken. Unless the reader
+			# has asked for tags to go through, it becomes a space.
 			text = text.replace("`", " ")
 		return text
-
-
-	def _anticrash(self, data, language):
-		"""Repair the engine's own text-processing faults.
-
-		The repairs are matched against the bytes a language reads, so
-		a code set's own bytes are what is seen, and are applied after
-		the reader's own backquote processing, so that a repair may say
-		an annotation of its own.
-		"""
-		fixes = _CRASH_FIXES.get(language)
-		if fixes:
-			data = resub(fixes, data)
-		# A time such as 2:30:15 is otherwise read as just 2:30.
-		return time_re.sub(br"\1:\2 \3", data)
 
 	def cancel(self):
 		self._engine.cancel()
@@ -558,6 +487,46 @@ class SynthDriver(SynthDriver):
 			[(self._engine.setParam, (_openevv.PARAM_DICTIONARY, 0 if enable else 1))],
 		)
 
+	def _get_phrasePrediction(self):
+		return self._phrasePrediction
+
+	def _set_phrasePrediction(self, enable):
+		self._phrasePrediction = enable
+
+	def _get_availablePausemodes(self):
+		"""Which pauses the engine shortens, numbered as the IBMTTS and
+		Eloquence 64 drivers number their setting of the same name.
+
+		The engine pauses for as long as at a full stop wherever it finishes a
+		stretch of text: at the end of every utterance, and at every change of
+		voice, rate, pitch or language, which is where a capital letter is
+		spelled at a raised pitch. Where the text ends in punctuation that
+		pause is the sentence's; where it does not, nothing asked for it.
+		"""
+		return OrderedDict(
+			(
+				# Translators: An option of the "Shorten pauses" setting.
+				("0", StringParameterInfo("0", _("Never"))),
+				# Translators: An option of the "Shorten pauses" setting.
+				("1", StringParameterInfo("1", _("At end of text only"))),
+				# Translators: An option of the "Shorten pauses" setting.
+				("2", StringParameterInfo("2", _("Always"))),
+			)
+		)
+
+	def _get_pauseMode(self):
+		return str(self._engine.pauseMode)
+
+	def _set_pauseMode(self, value):
+		try:
+			mode = int(value)
+		except (TypeError, ValueError):
+			mode = None
+		if mode not in _openevv.PAUSE_MODES:
+			log.error("openevv: %r is not a pause mode" % (value,))
+			return
+		self._engine.control([(self._engine.setPauseMode, (mode,))])
+
 	def _get_voiceTags(self):
 		return self._voiceTags
 
@@ -568,10 +537,16 @@ class SynthDriver(SynthDriver):
 		"""What the synthesiser can be run at.
 
 		Not the speaking rate, which NVDA already calls the rate: this is the
-		sample rate. Eleven kilohertz is what Eloquence has always sounded like
-		and is the default. Eight kilohertz is the narrow telephone voice IBM
-		shipped, and sixteen is made by the synthesiser at that rate, so it
-		carries more of the top of the voice.
+		sample rate. Eleven thousand and twenty five is what Eloquence has
+		always sounded like and is the default; below it there is nothing to
+		gain but the eight thousand IBM shipped for the telephone.
+
+		Above it the engine still runs at eleven thousand and twenty five and
+		the rate is raised from there, so the voice is the same one at every
+		setting and what a higher rate buys is an audio device handed
+		something it wants without resampling it again on the way out --
+		unless the wideband voice is on, which keeps that voice below about
+		5.4 kHz and adds a top above it.
 		"""
 		return OrderedDict(
 			(
@@ -600,65 +575,77 @@ class SynthDriver(SynthDriver):
 			return
 		self._engine.control([(self._engine.setSampleRate, (hz,))])
 
-	def _get_availableVolumeboosts(self):
-		"""How much louder than the engine makes it the speech can be.
+	def _get_wideband(self):
+		return self._engine.wideband
 
-		Applied to the samples on the way to the player, with the loudest
-		peaks rounded off rather than cut, so a boost is louder without being
-		harsh.
+	def _set_wideband(self, enable):
+		self._engine.control([(self._engine.setWideband, (enable,))])
+
+	def _get_availableDictionarysets(self):
+		"""The managed dictionary sets installed add-ons offer, and none.
+
+		A set chosen and since uninstalled is still offered, as not
+		installed, so that opening the dialog does not quietly change the
+		choice; it comes back into force if the set does.
 		"""
-		names = {
-			# Translators: A volume boost level that changes nothing.
-			"0": _("Off"),
-			# Translators: A volume boost level, one and a half times louder.
-			"1": _("1.5x"),
-			# Translators: A volume boost level, twice as loud.
-			"2": _("2x"),
-			# Translators: A volume boost level, three times as loud.
-			"3": _("3x"),
-		}
-		return OrderedDict(
-			(level, StringParameterInfo(level, names[level]))
-			for level, _gain in _openevv.BOOST_LEVELS
-		)
+		sets = OrderedDict()
+		# Translators: The choice of no managed dictionary set.
+		sets[dictionaries.NO_SET] = StringParameterInfo(dictionaries.NO_SET, _("None"))
+		installed = dictionaries.managedSets()
+		for one in sorted(installed.values(), key=lambda s: s.name.lower()):
+			sets[one.id] = StringParameterInfo(one.id, "%s (%s)" % (one.name, one.version))
+		if self._dictionarySet not in sets:
+			sets[self._dictionarySet] = StringParameterInfo(
+				self._dictionarySet,
+				# Translators: A chosen dictionary set that is no longer installed.
+				_("%s (not installed)") % self._dictionarySet,
+			)
+		return sets
 
-	def _get_volumeBoost(self):
-		return self._volumeBoost
+	def _get_dictionarySet(self):
+		return self._dictionarySet
 
-	def _set_volumeBoost(self, value):
-		if self._engine.setBoost(value):
-			self._volumeBoost = str(value)
+	def _set_dictionarySet(self, value):
+		self._dictionarySet = str(value) if value else dictionaries.NO_SET
+		self._applyDictionaries()
+
+	def _get_personalDictionary(self):
+		return self._personalDictionary
+
+	def _set_personalDictionary(self, enable):
+		self._personalDictionary = bool(enable)
+		self._applyDictionaries()
+
+	def _applyDictionaries(self):
+		# Worked out here, on NVDA's thread, because finding a managed set
+		# means asking NVDA for its add-ons; the engine is handed folders.
+		try:
+			folders = dictionaries.folders(self._dictionarySet, self._personalDictionary)
+		except Exception:  # noqa: BLE001
+			log.error("openevv: could not work out where dictionaries are", exc_info=True)
+			return
+		self._engine.control([(self._engine.setDictionaryFolders, (folders,))])
 
 	def _get_availableVoices(self):
-		"""One voice per language.
+		"""One voice per language and preset.
 
-		The eight presets are not voices here: they are the variants, a
-		setting of their own, so that choosing a language and choosing who
-		speaks it are two choices and not one list of pairs. The language is
-		what a document's own language is matched against.
+		A library may have several languages in it, and each has eight
+		presets of its own, so what the reader is offered is the pairs: the
+		language is what a document's own language is matched against and
+		the preset is what it sounds like. A build with one language in it
+		offers the eight it always did, under the same identifiers as
+		before, so nothing a reader had chosen is lost.
 		"""
 		voices = OrderedDict()
 		for language in self._engine.languages:
-			voices[str(language)] = VoiceInfo(
-				str(language),
-				_openevv.nameOf(language),
-				_openevv.localeOf(language),
-			)
+			names = self._engine.voiceNamesFor(language)
+			for number, name in names.items():
+				voices[self._voiceId(language, number)] = VoiceInfo(
+					self._voiceId(language, number),
+					"%s - %s" % (_openevv.nameOf(language), name),
+					_openevv.localeOf(language),
+				)
 		return voices
-
-	def _get_availableVariants(self):
-		"""Who speaks it: the eight presets, by the names Eloquence has always
-		given them. The same eight in every language."""
-		names = self._engine.voiceNamesFor(self._engine.language)
-		return OrderedDict(
-			(
-				str(number),
-				StringParameterInfo(
-					str(number), _openevv.VARIANT_NAMES.get(number, names[number])
-				),
-			)
-			for number in sorted(names)
-		)
 
 	def _languageFor(self, locale):
 		"""Which of the library's languages a document's locale means.
@@ -687,7 +674,7 @@ class SynthDriver(SynthDriver):
 		"""The language the reader chose, which a document's own changes of
 		language are made from and go back to."""
 		try:
-			return int(self._voice)
+			return self._splitVoiceId(self._voice)[0]
 		except (TypeError, ValueError):
 			return self._engine.language
 
@@ -696,74 +683,57 @@ class SynthDriver(SynthDriver):
 		chosen in. A language change keeps the preset and changes what it
 		sounds like, which is what a person expects of a voice."""
 		try:
-			return int(self._variant)
+			return self._splitVoiceId(self._voice)[1]
 		except (TypeError, ValueError):
 			return _openevv.VOICE_FIRST
+
+	def _voiceId(self, language, number):
+		"""What a voice is called.
+
+		Where the library has one language the name is the preset's number
+		and nothing else, which is what it has always been and what a
+		reader's saved choice holds. Where it has several the language goes
+		in front, because the same eight numbers mean eight different
+		voices in each.
+		"""
+		if len(self._engine.languages) < 2:
+			return str(number)
+		return "%d:%d" % (language, number)
+
+	def _splitVoiceId(self, value):
+		"""(language, preset) for a voice, however it is written. A bare
+		number is the language in force, which is what a configuration
+		written before there was more than one holds."""
+		text = str(value)
+		if ":" in text:
+			language, number = text.split(":", 1)
+			return int(language), int(number)
+		return self._engine.language, int(text)
 
 	def _get_voice(self):
 		return self._voice
 
 	def _set_voice(self, value):
-		"""Choose the language.
-
-		A configuration written before the presets were a setting of their own
-		holds a preset, bare or after its language ("65536:4"), and is read as
-		the language and the variant it was.
-		"""
-		language = preset = None
 		try:
-			text = str(value)
-			if ":" in text:
-				first, second = text.split(":", 1)
-				language, preset = int(first), int(second)
-			else:
-				number = int(text)
-				if number in self._engine.languages:
-					language = number
-				elif _openevv.VOICE_FIRST <= number <= _openevv.VOICE_LAST:
-					preset = number
-				else:
-					return
+			language, number = self._splitVoiceId(value)
 		except ValueError:
 			return
-		if language is not None and language not in self._engine.languages:
+		if language not in self._engine.languages:
 			return
-		names = self._engine.voiceNamesFor(
-			language if language is not None else self._engine.language
-		)
-		if preset is not None and preset not in names:
-			preset = None
-		if language is None and preset is None:
+		if number not in self._engine.voiceNamesFor(language):
 			return
 
-		# A language change keeps everything the reader has set, the rate
-		# above all: it is the same voice speaking another language. Only
-		# who is speaking, if the old configuration named it, is changed.
+		self._voice = self._voiceId(language, number)
+		# Copying a preset over the voice in force replaces every one of its
+		# eight settings, so whatever the reader had chosen is gone; NVDA sets
+		# rate, pitch and the rest again after a voice change, which is what
+		# puts them back. A language change does the same thing for the same
+		# reason, which is why the preset is copied after it and not before.
 		batch = []
-		if language is not None and language != self._engine.language:
-			batch.append((self._engine.selectLanguage,
-			              (language, self._presetNow())))
-		if preset is not None:
-			batch.append((self._engine.selectPreset, (preset,)))
-			self._variant = str(preset)
-		if language is not None:
-			self._voice = str(language)
-		if batch:
-			self._engine.control(batch)
-
-	def _get_variant(self):
-		return self._variant
-
-	def _set_variant(self, value):
-		"""Choose who speaks: copy that preset over the voice in force."""
-		try:
-			number = int(value)
-		except (TypeError, ValueError):
-			return
-		if number not in self._engine.voiceNamesFor(self._engine.language):
-			return
-		self._variant = str(number)
-		self._engine.control([(self._engine.selectPreset, (number,))])
+		if language != self._engine.language:
+			batch.append((self._engine.setLanguage, (language,)))
+		batch.append((self._engine.copyVoice, (number,)))
+		self._engine.control(batch)
 
 	def _get_language(self):
 		return _openevv.localeOf(self._engine.language)

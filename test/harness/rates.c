@@ -106,9 +106,6 @@ static int   report;
  * enters another's code. */
 static int   method = CVT_SINC;
 static int   synthesising;
-/* Sixteen thousand is synthesised outright unless a way of
-   raising the rate is named, which is eci_env.c's rule and so is ours. */
-static int   nativeWide = 1;
 static const char *method_name = "sinc";
 
 /* What one run said, and how it behaved while saying it. */
@@ -288,6 +285,7 @@ static const struct { int32_t from; int32_t to; } RATIOS[] = {
     { 11025, 44100 },   /* and a wider whole one */
     { 11025, 16000 },   /* and the uneven ones */
     { 11025, 48000 },
+    { 22050, 16000 },   /* and lowering, which only the sinc does */
 };
 
 #define RATIO_COUNT ((int)(sizeof RATIOS / sizeof RATIOS[0]))
@@ -303,6 +301,9 @@ static int unitChecks(void)
             uint32_t n = 1000, whole, made, at;
             uint32_t i;
             int32_t delay;
+
+            if (to < from && METHODS[m].method != CVT_SINC)
+                continue;
 
             /* A held level, then a straight line, so both properties are in
                the one run and the join between them is exercised too.
@@ -608,8 +609,6 @@ int main(void)
     {
         const char *say = getenv("EVV_UPSAMPLE");
 
-        if (say != 0 && say[0] != 0 && strcmp(say, "none") != 0)
-            nativeWide = 0;
         if (say != 0) {
             method_name = say;
             if (strcmp(say, "none") == 0)
@@ -690,9 +689,6 @@ int main(void)
         int32_t set = WANTED[r].set;
         int32_t hz = WANTED[r].hz;
         int32_t from = synthesising ? 0 : WANTED[r].from;
-
-        if (nativeWide && hz == 16000)
-            from = 0;
         long    got, owed, slack;
         int32_t back = -1;
 
