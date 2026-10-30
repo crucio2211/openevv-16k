@@ -89,8 +89,10 @@ def main(path):
             if dll.eciGetParam(handle, PARAM_CONSONANT_DURATION) != percent:
                 raise RuntimeError("consonant duration did not retain %d" % percent)
             spoken = 0
+            # Explicitly exercise the consonants from the reported examples:
+            # /t/ in "settings", /d/ in "daddy/did", and /p/, /k/, /f/, /s/.
             phrase = b" ".join(
-                [b"pepper poppy paper piper popper"] * 4
+                [b"settings settings settings daddy did it pepper poppy paper piper popper take two tickets fifty five sunny summer"] * 4
             ) + b"."
             if not dll.eciAddText(handle, phrase):
                 raise RuntimeError("engine refused consonant-duration test text")
@@ -101,10 +103,18 @@ def main(path):
             return spoken
 
         shorter = sample_count_at(80)
+        normal = sample_count_at(100)
         longer = sample_count_at(120)
-        if longer <= shorter:
-            raise RuntimeError("consonant-duration adjuster did not lengthen speech: 80%%=%d, 120%%=%d" % (shorter, longer))
-        print("switchlangs: consonant adjuster changed output length (%d -> %d samples)" % (shorter, longer), flush=True)
+        if not shorter < normal < longer:
+            raise RuntimeError(
+                "consonant duration did not scale monotonically: "
+                "80%%=%d, 100%%=%d, 120%%=%d" % (shorter, normal, longer)
+            )
+        print(
+            "switchlangs: 32-bit consonant duration scaling passed "
+            "(80%%=%d, 100%%=%d, 120%%=%d samples)" % (shorter, normal, longer),
+            flush=True,
+        )
         if dll.eciSetParam(handle, PARAM_CONSONANT_DURATION, default_duration) < 0:
             raise RuntimeError("could not restore default consonant duration")
 
