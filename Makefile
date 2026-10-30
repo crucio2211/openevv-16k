@@ -279,9 +279,14 @@ LOW := -DEVV_ARENA=1
 endif
 
 OPT        ?= -O2
+# The rules written as C reach a place in a frame or a variable through a
+# pointer cast to the width the operation has (6.1-lifted rules do this and
+# IBM rules never did) -- build everything with strict aliasing off, or the
+# compiler silently miscompiles those paths (dropped speech).
+ALIAS      := -fno-strict-aliasing
 INCS       := -Iinclude $(addprefix -I,$(SRCDIRS)) $(addprefix -I,$(LANGS)) \
               $(foreach l,$(LANGS),-Irom/$(notdir $(l)))
-ALL_CFLAGS := $(OPT) -std=gnu99 $(INCS) $(WARN) $(LOW) $(TRIM) $(ROMDEFS) \
+ALL_CFLAGS := $(OPT) $(ALIAS) -std=gnu99 $(INCS) $(WARN) $(LOW) $(TRIM) $(ROMDEFS) \
               $(CFLAGS)
 
 # One directory per build, where a build is which form the rules are in and
@@ -520,13 +525,13 @@ speechd-test: $(BUILD)/sd_openevv$(SUF) $(BUILD)/evv
 	   python3 test/speechd.py $(BUILD)/sd_openevv$(SUF) speechd/openevv.conf
 
 # And with every language in it, which is the configuration a release ships.
-# Ten are linked and nine are advertised: Japanese builds and speaks but its
+# Twelve are linked and eleven are advertised: Japanese builds and speaks but its
 # text is not UTF-8 in any of its three code sets, and speechd/openevv.c says
 # why it is deliberately not offered. So the count is stated rather than taken
 # from LANGS, and a language that stopped being advertised would fail here.
 speechd-test-all:
-	@$(MAKE) RULES=$(RULES) SPEECHD_LANGUAGES=9 \
-	   LANGS="lang/enus lang/engb lang/dede lang/eses lang/esus lang/frfr lang/frca lang/itit lang/plpl lang/jajp" \
+	@$(MAKE) RULES=$(RULES) SPEECHD_LANGUAGES=11 \
+	   LANGS="lang/enus lang/engb lang/dede lang/eses lang/esus lang/frfr lang/frca lang/itit lang/plpl lang/jajp lang/fifi lang/ptbr" \
 	   speechd-test
 
 # A dictionary read in from a file, which nothing else here does: cli/probe.c
@@ -1032,10 +1037,10 @@ crashers32: $(BUILD)/evv32
 .PHONY: words words-record
 # Every language with a list, which is all of them but Polish and Japanese.
 words:
-	@bash test/words.sh check enus engb dede eses esus frfr frca itit
+	@bash test/words.sh check enus engb dede eses esus frfr frca itit fifi ptbr
 
 words-record:
-	@bash test/words.sh record enus engb dede eses esus frfr frca itit
+	@bash test/words.sh record enus engb dede eses esus frfr frca itit fifi ptbr
 
 .PHONY: matrix matrix-record
 matrix:
@@ -1111,7 +1116,7 @@ install-lib: $(BUILD)/$(SONAME)
 # CC32 can be set to whole: `make evv32 CC32="gcc -m32"'.
 CC32      ?= i686-unknown-linux-gnu-gcc
 OBJDIR32  := $(BUILD)/obj32-$(RULES)/$(subst $(space),-,$(TAGS))
-CFLAGS32  := $(OPT) -std=gnu99 $(INCS) $(WARN) $(TRIM) $(ROMDEFS) \
+CFLAGS32  := $(OPT) $(ALIAS) -std=gnu99 $(INCS) $(WARN) $(TRIM) $(ROMDEFS) \
              $(CFLAGS)
 OBJECTS32 := $(patsubst %.c,$(OBJDIR32)/%.o,$(notdir $(SOURCES)))
 
@@ -1151,7 +1156,7 @@ WINDRES    ?= x86_64-w64-mingw32-windres
 ARWIN      ?= x86_64-w64-mingw32-ar
 OBJDIRWIN  := $(BUILD)/objwin-$(RULES)/$(subst $(space),-,$(TAGS))
 
-CFLAGSWIN  := $(OPT) -std=gnu99 $(INCS) $(WARN) -DEVV_ARENA=1 \
+CFLAGSWIN  := $(OPT) $(ALIAS) -std=gnu99 $(INCS) $(WARN) -DEVV_ARENA=1 \
               $(TRIM) $(ROMDEFS) $(CFLAGS)
 # Static, so what ships is one file. MINGW64_LDFLAGS is where the cross gcc's
 # thread runtime is; the flake sets it, since nothing puts it on the link path
@@ -1261,7 +1266,7 @@ CCWIN32     ?= i686-w64-mingw32-gcc
 WINDRES32   ?= i686-w64-mingw32-windres
 ARWIN32     ?= i686-w64-mingw32-ar
 OBJDIRWIN32 := $(BUILD)/objwin32-$(RULES)/$(subst $(space),-,$(TAGS))
-CFLAGSWIN32 := $(OPT) -std=gnu99 $(INCS) $(WARN) $(TRIM) $(ROMDEFS) $(CFLAGS)
+CFLAGSWIN32 := $(OPT) $(ALIAS) -std=gnu99 $(INCS) $(WARN) $(TRIM) $(ROMDEFS) $(CFLAGS)
 LDFLAGSWIN32 := -static -Wl,--kill-at $(MINGW_LDFLAGS)
 OBJECTSWIN32 := $(patsubst %.c,$(OBJDIRWIN32)/%.o,$(notdir $(SOURCESWIN)))
 

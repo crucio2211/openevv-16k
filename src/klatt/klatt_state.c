@@ -19,6 +19,8 @@ AT(version, 0x0000);
 AT(user, 0x0004);
 AT(unknown_0010, 0x0010);
 AT(const_parms_set, 0x0014);
+AT(pace_rate, 0x0018);
+AT(noise_filter, 0x001c);
 AT(volume, 0x0058);
 AT(open_state, 0x005c);
 AT(filters, 0x0064);
@@ -107,16 +109,27 @@ uint32_t noise(klatt_state *k, uint32_t seed)
     return seed;
 }
 
+/* One pitch period in thousandths of a sample. A paced synthesiser works it
+   out at its partner's rate and scales the answer, rather than dividing at
+   its own, so its periods are exactly a whole multiple of its partner's
+   and the pulses of the two never drift apart -- rounded independently
+   they differ by a thousandth of a sample a period, and that adds up. */
+static int32_t period_milli(const klatt_state *k)
+{
+    if (k->pace_rate > 0)
+        return mul32(k->pace_rate, 10000) / k->f0
+             * (k->cp.sample_rate / k->pace_rate);
+    return mul32(k->cp.sample_rate, 10000) / k->f0;
+}
+
 void compute_v_start(klatt_state *k)
 {
-    k->v_start = k->v_start + mul32(k->voicing_size, 1000)
-               - mul32(k->cp.sample_rate, 10000) / k->f0;
+    k->v_start = k->v_start + mul32(k->voicing_size, 1000) - period_milli(k);
 }
 
 void compute_voicing_size(klatt_state *k)
 {
-    k->voicing_size =
-        (mul32(k->cp.sample_rate, 10000) / k->f0 - k->v_start + 999) / 1000;
+    k->voicing_size = (period_milli(k) - k->v_start + 999) / 1000;
 
     k->open_len =
         (mul32(mul32(k->cp.sample_rate, 100), k->oq)
