@@ -39,6 +39,14 @@ typedef int32_t (*VoiceFn)(int32_t value, void *a, void *b, void *c,
 
 extern int insertPhoneme(void *d, int32_t name, int32_t ms);
 
+int32_t setVowelDurationPercent(delta_state *d, int32_t percent)
+{
+    if (d == 0 || ELOQC(d) == 0 || percent < 50 || percent > 150)
+        return 0;
+    ELOQ_VOWEL_DURATION(d) = percent;
+    return 1;
+}
+
 /* How long a phoneme name may be, which is four characters packed into a
    word rather than a string. */
 #define PHONEME_NAME_MAX 4
@@ -52,6 +60,22 @@ int32_t synthesizingWord(delta_state *d, const void *tok)
     if (ELOQ_CB(d, CB_WORD) != 0)
         ((WordFn)ELOQ_CB(d, CB_WORD))(TOKEN_VALUE(tok),
                                       ELOQ_CB(d, CB_DATA(CB_WORD)));
+    return 0;
+}
+
+/* Rule entry for the English nucleus duration adjustment. The vowel rule
+   passes its duration cell, so this setting changes only that cell and only
+   for the English rule that calls it. */
+int32_t vowelDurationAdjust(delta_state *d, int32_t *duration)
+{
+    int32_t percent;
+
+    if (d == 0 || duration == 0 || ELOQC(d) == 0)
+        return 0;
+    percent = ELOQ_VOWEL_DURATION(d);
+    if (percent < 50 || percent > 150)
+        percent = 97;
+    *duration = (int32_t)(((int64_t)*duration * percent + 50) / 100);
     return 0;
 }
 

@@ -209,8 +209,12 @@ PARAM_LANGUAGE = 9
 #: setting of the same name: nought never, one only where text stops with no
 #: punctuation, two always. One is how the engine starts.
 PARAM_PAUSE_MODE = 33
+PARAM_VOWEL_DURATION = 23
 PAUSE_MODES = (0, 1, 2)
 DEFAULT_PAUSE_MODE = 1
+DEFAULT_VOWEL_DURATION = 97
+MIN_VOWEL_DURATION = 80
+MAX_VOWEL_DURATION = 120
 
 # A voice's, likewise.
 VOICE_GENDER = 0
@@ -484,6 +488,8 @@ class Engine:
 		self.voiceParams = {}
 		#: The pause mode the engine is in, which is the one it starts in.
 		self.pauseMode = DEFAULT_PAUSE_MODE
+		#: Percentage used by the native US English nucleus-duration rule.
+		self.vowelDuration = DEFAULT_VOWEL_DURATION
 
 	# ---- what the driver asks of it ----------------------------------
 
@@ -688,6 +694,17 @@ class Engine:
 			log.error("openevv: the library refused pause mode %r" % (mode,))
 			return False
 		self.pauseMode = mode
+		return True
+
+	def setVowelDuration(self, percent):
+		"""Set the percentage used to scale US English vowel durations."""
+		percent = int(percent)
+		if percent == self.vowelDuration:
+			return True
+		if self.setParam(PARAM_VOWEL_DURATION, percent) < 0:
+			log.error("openevv: the library refused vowel duration %r" % percent)
+			return False
+		self.vowelDuration = percent
 		return True
 
 	def setSampleRate(self, hz):

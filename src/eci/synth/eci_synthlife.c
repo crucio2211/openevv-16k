@@ -335,6 +335,7 @@ static void stl_build(SynthThread *t, void *app, void *state)
     ST_WIDEBAND(t) = 0;
     ST_PAUSES(t) = PAUSES_DEFAULT;
     ST_TAIL(t) = 0;
+    ST_VOWEL_DURATION(t) = 97;
 
     p = cpp_new(rm_bytes);
     ST_ROMAN(t) = p ? rz_ctor(p, t) : 0;

@@ -3476,13 +3476,10 @@ label L3 was at_0x88
   call ZZstarttest4 arity 1 depth 1
   push reg r6
   call dur_adjustments arity 1 depth 2
-  load movl statefld 2788 into r0
-  mul imull imm 97 reg r0 into r0
-  push imm 100
-  widen cltd
-  popreg r7
-  div idivl reg r7
-  store movl reg r0 statefld 2788
+  push state 2788
+  push state 0
+  call vowelDurationAdjust arity 2 depth 2
+  popn 2
   push reg r6
   call ZZstarttest5 arity 1 depth 3
   push reg r6

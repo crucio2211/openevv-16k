@@ -23,6 +23,10 @@
 #include "eci_synththread.h"
 #include "evv_abi.h"
 #include "evv_arena.h"
+#include "delta.h"
+
+extern delta_state *ew_machine(void *engine);
+extern int32_t setVowelDurationPercent(delta_state *d, int32_t percent);
 
 /* Parameters the concatenative side understands. Numbered from its own list,
    which is not the one the published interface uses. */
@@ -268,6 +272,19 @@ void setPausesRun(SynthThread *t, int32_t mode, int32_t seq)
     (void)seq;
     stw_processRemaining(t);
     ST_PAUSES(t) = mode;
+    finished(t);
+}
+
+void setVowelDurationRun(SynthThread *t, int32_t percent, int32_t seq)
+{
+    delta_state *machine;
+
+    (void)seq;
+    stw_processRemaining(t);
+    ST_VOWEL_DURATION(t) = percent;
+    machine = ew_machine(ST_ENGINE(t));
+    if (!setVowelDurationPercent(machine, percent))
+        stb_postEngineError(t);
     finished(t);
 }
 

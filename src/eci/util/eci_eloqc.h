@@ -34,6 +34,7 @@ typedef struct {
     EciLink     *error_link;    /* +0xa4 */
     EciLink     *cons_link;     /* +0xa8 */
     int32_t      io_done;       /* +0xac */
+    int32_t      vowel_duration_percent; /* +0xb0, English vowel timing */
 } Eloqc;
 
 #define ELOQC(d)              EVV_AT(Eloqc *, (d)->eloqc)
@@ -51,5 +52,6 @@ typedef struct {
 #define ERROR_TO(d)           (ELOQC(d)->error_to)
 #define ERROR_CODE(d)         (ELOQC(d)->error_code)
 #define ELOQ_STREAMS(d)       (ELOQC(d)->streams)
+#define ELOQ_VOWEL_DURATION(d) (ELOQC(d)->vowel_duration_percent)
 
 #endif

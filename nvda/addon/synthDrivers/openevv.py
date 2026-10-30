@@ -231,6 +231,13 @@ class SynthDriver(SynthDriver):
 		NumericDriverSetting("roughness", _("Rou&ghness"), False),
 		# Translators: Label for a setting in voice settings dialog.
 		NumericDriverSetting("breathiness", _("Breathi&ness"), False),
+		# Translators: Label for the US English vowel duration slider. The
+		# slider spans actual rule multipliers from 80 to 120 percent.
+		NumericDriverSetting(
+			"vowelDuration",
+			_("&Vowel duration (0=80%, 50=100%, 100=120%)"),
+			False,
+		),
 		# Translators: Label for a setting in voice settings dialog.
 		BooleanDriverSetting("abbreviations", _("Expand a&bbreviations"), False),
 		DriverSetting(
@@ -553,6 +560,18 @@ class SynthDriver(SynthDriver):
 
 	def _set_breathiness(self, value):
 		self._post(_openevv.VOICE_BREATHINESS, value)
+
+	def _get_vowelDuration(self):
+		percent = self._engine.vowelDuration
+		return max(0, min(100, int(round(
+			(percent - _openevv.MIN_VOWEL_DURATION) * 100
+			/ (_openevv.MAX_VOWEL_DURATION - _openevv.MIN_VOWEL_DURATION)
+		))))
+
+	def _set_vowelDuration(self, sliderValue):
+		span = _openevv.MAX_VOWEL_DURATION - _openevv.MIN_VOWEL_DURATION
+		percent = _openevv.MIN_VOWEL_DURATION + int(round(sliderValue * span / 100))
+		self._engine.control([(self._engine.setVowelDuration, (percent,))])
 
 	def _get_abbreviations(self):
 		return self._abbreviations
