@@ -31,7 +31,7 @@ jobs:
           set -eux
           LANGS="lang/enus lang/fifi lang/ptbr"
           make so RULES=c EVVPLAIN=1 LANGS="$LANGS" -j2
-          python3 test/lib/switchlangs.py build/libeci.so
+          python3 -u test/lib/switchlangs.py build/libeci.so
 
       - name: Build 64-bit engine with all 12 languages
         run: |

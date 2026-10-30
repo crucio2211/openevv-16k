@@ -21,6 +21,7 @@ LANGUAGES = {
 
 def main(path):
     dll = ctypes.CDLL(os.path.abspath(path))
+    print("switchlangs: loaded library", flush=True)
     dll.eciNewEx.restype = ctypes.c_void_p
     dll.eciNewEx.argtypes = [ctypes.c_int]
     dll.eciDelete.argtypes = [ctypes.c_void_p]
@@ -46,10 +47,12 @@ def main(path):
     missing = set(LANGUAGES) - available
     if missing:
         raise RuntimeError("missing language IDs: " + ", ".join(hex(x) for x in missing))
+    print("switchlangs: available languages %s" % sorted(hex(x) for x in available), flush=True)
 
     handle = dll.eciNewEx(0x10000)
     if not handle:
         raise RuntimeError("could not create English engine instance")
+    print("switchlangs: created English instance", flush=True)
     buffer = (ctypes.c_short * FRAME)()
     spoken = 0
     callback_type = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_void_p,
@@ -67,18 +70,24 @@ def main(path):
         dll.eciRegisterCallback(handle, callback, None)
         if not dll.eciSetOutputBuffer(handle, FRAME, buffer):
             raise RuntimeError("engine refused the output buffer")
+        print("switchlangs: set output buffer", flush=True)
         dll.eciSetParam(handle, PARAM_INPUT_TYPE, 1)
         for language, (name, sentence) in LANGUAGES.items():
             spoken = 0
+            print("switchlangs: selecting " + name, flush=True)
             if not dll.eciSetParam(handle, PARAM_LANGUAGE, language):
                 raise RuntimeError("engine refused " + name)
+            print("switchlangs: selected " + name, flush=True)
             for voice in range(1, 9):
                 voice_name = ctypes.create_string_buffer(64)
                 dll.eciGetVoiceName(handle, voice, voice_name)
+            print("switchlangs: read voices for " + name, flush=True)
+            print("switchlangs: synthesizing " + name, flush=True)
             if not dll.eciAddText(handle, sentence):
                 raise RuntimeError("engine refused text for " + name)
             if not dll.eciSynthesize(handle) or not dll.eciSynchronize(handle):
                 raise RuntimeError("engine failed to synthesize " + name)
+            print("switchlangs: synthesized " + name, flush=True)
             if spoken == 0:
                 raise RuntimeError("engine produced no audio for " + name)
             print("switchlangs: %s spoke %d samples" % (name, spoken))
