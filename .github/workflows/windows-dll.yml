@@ -31,7 +31,7 @@ jobs:
           set -eux
           LANGS="lang/enus lang/fifi lang/ptbr"
           make so RULES=bytecode EVVPLAIN=1 LANGS="$LANGS" -j2
-          gdb --batch -ex 'set breakpoint pending on' -ex 'break vinitloc_new if loc->kind >= 0' -ex run -ex 'p *loc' -ex bt --args python3 -u build/libeci.so
+          gdb --batch -ex 'set breakpoint pending on' -ex 'break vinitloc_new if loc->kind >= 0' -ex run -ex 'p *loc' -ex bt --args python3 -u test/lib/switchlangs.py build/libeci.so
           gdb --return-child-result --batch -ex run -ex bt --args python3 -u test/lib/switchlangs.py build/libeci.so
 
       - name: Build 64-bit bytecode engine with all 12 languages
