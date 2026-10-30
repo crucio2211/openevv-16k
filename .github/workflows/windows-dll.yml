@@ -1,4 +1,4 @@
-name: Windows 16kHz NVDA add-on (feature experiment)
+name: Windows 16kHz NVDA add-on (12 languages)
 
 on:
   workflow_dispatch:
@@ -23,28 +23,28 @@ jobs:
         run: |
           set -eux
           python3 tools/rules/consts.py enus
-          EVV_NOTATION_LANG=enus python3 tools/rules/notation.py build > /dev/null
-          python3 tools/module/dict.py build
+          make rulecode LANGS="lang/enus"
+          EVV_LANG_DIR=lang/enus python3 tools/module/dict.py build
 
       - name: Smoke-test Finnish and Brazilian Portuguese language switching
         run: |
           set -eux
           LANGS="lang/enus lang/fifi lang/ptbr"
-          make so RULES=bytecode EVVPLAIN=1 LANGS="$LANGS" -j2
+          make so RULES=c EVVPLAIN=1 LANGS="$LANGS" -j2
           gdb --return-child-result --batch -ex run -ex bt --args python3 -u test/lib/switchlangs.py build/libeci.so
 
-      - name: Build 64-bit bytecode engine with all 12 languages
+      - name: Build 64-bit C-rule engine with all 12 languages
         run: |
           set -eux
           LANGS="lang/enus lang/engb lang/eses lang/esus lang/dede lang/frfr lang/frca lang/itit lang/plpl lang/jajp lang/fifi lang/ptbr"
-          make build/eci.dll RULES=bytecode LANGS="$LANGS" -j2
+          make build/eci.dll RULES=c LANGS="$LANGS" -j2
           ls -lh build/eci.dll
 
-      - name: Build 32-bit bytecode engine with all 12 languages
+      - name: Build 32-bit C-rule engine with all 12 languages
         run: |
           set -eux
           LANGS="lang/enus lang/engb lang/eses lang/esus lang/dede lang/frfr lang/frca lang/itit lang/plpl lang/jajp lang/fifi lang/ptbr"
-          make build/eci32.dll RULES=bytecode LANGS="$LANGS" -j2
+          make build/eci32.dll RULES=c LANGS="$LANGS" -j2
           ls -lh build/eci32.dll
 
       - name: Package NVDA add-on 1.3.7

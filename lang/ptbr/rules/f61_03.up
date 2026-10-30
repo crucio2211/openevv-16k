@@ -5,10 +5,9 @@
 
 rule init_vars takes 1
   instead
-  local cf0 bytes 8
   variable g168 word 192
   variable g568 word 788
-  variable gbdc word 1970
+  variable gbdc word 1968
   variable gc30 word 2030
   variable gc50 word 2044
   variable ge30 word 2456
@@ -22,10 +21,10 @@ rule init_vars takes 1
   set global half 2032 to 5
   call move_i addr gc30 1
   call npush_s 1
-  set cf0 to 65532
   set global half 2046 to 1
-  call npop addr cf0
+  call npop addr gc50
   set global half 2046 to 5
+  call move_i addr gc50 1
   set global half 1750 to 1
   set global half 1906 to global half 1854
   and 0 into global half 1342
@@ -62,7 +61,7 @@ rule set_global_constants takes 1
   local cf0 bytes 8
   local h_rax
   local h_xmm0
-  variable g988 word 1420
+  variable g988 word 1414
   place p6c63
   place p6c98
   place p6cf8

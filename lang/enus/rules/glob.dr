@@ -30958,3 +30958,112 @@ label L1 was at_0x1d
   return imm 1
 end
 
+
+rule ukp_ZZlpta_load_vvg__setscan_0034r__2 from glob.obj
+shape frame 0 argbase 8 params 1
+label L0 was _ukp_ZZlpta_load_vvg__setscan_0034r__2
+  load movl state 0 into r6
+  load movl state 416 into r0
+  push state 416
+  push state 0
+  call lpta_loadp arity 2 depth 2
+  push imm 2
+  push state 0
+  call setscan_r arity 2 depth 4
+  popn 4
+  return reg r0
+end
+rule ukp_ZZlpta_load_vvg__setscan_0037l__2 from glob.obj
+shape frame 0 argbase 8 params 1
+label L0 was _ukp_ZZlpta_load_vvg__setscan_0037l__2
+  load movl state 0 into r6
+  load movl state 440 into r0
+  push state 440
+  push state 0
+  call lpta_loadp arity 2 depth 2
+  push imm 2
+  push state 0
+  call setscan_l arity 2 depth 4
+  popn 4
+  return reg r0
+end
+rule ukp_ZZlpta_load_vvg__setscan_0037r__2 from glob.obj
+shape frame 0 argbase 8 params 1
+label L0 was _ukp_ZZlpta_load_vvg__setscan_0037r__2
+  load movl state 0 into r6
+  load movl state 440 into r0
+  push state 440
+  push state 0
+  call lpta_loadp arity 2 depth 2
+  push imm 2
+  push state 0
+  call setscan_r arity 2 depth 4
+  popn 4
+  return reg r0
+end
+rule ukp_ZZtest_string_s_2_1_ZZstring271 from glob.obj
+shape frame 0 argbase 8 params 1
+label L0 was _ukp_ZZtest_string_s_2_1_ZZstring271
+  push sym ZZstring273
+  push imm 1
+  push imm 2
+  push param 0
+  call test_string_s arity 4 depth 4
+  popn 4
+  return reg r0
+end
+rule ukp_ZZtest_string_s_2_1_ZZstring419 from glob.obj
+shape frame 0 argbase 8 params 1
+label L0 was _ukp_ZZtest_string_s_2_1_ZZstring419
+  push sym ZZstring412
+  push imm 1
+  push imm 2
+  push param 0
+  call test_string_s arity 4 depth 4
+  popn 4
+  return reg r0
+end
+rule ukp_ZZtest_string_s_2_2_ZZstring287 from glob.obj
+shape frame 0 argbase 8 params 1
+label L0 was _ukp_ZZtest_string_s_2_2_ZZstring287
+  push sym ZZstring289
+  push imm 2
+  push imm 2
+  push param 0
+  call test_string_s arity 4 depth 4
+  popn 4
+  return reg r0
+end
+rule ukp_ZZtest_synch16_ZZstring380 from glob.obj
+shape frame 0 argbase 8 params 1
+label L0 was _ukp_ZZtest_synch16_ZZstring380
+  push sym ZZstring376
+  push imm 1
+  push imm 16
+  push param 0
+  call test_synch arity 4 depth 4
+  popn 4
+  return reg r0
+end
+rule ukp_ZZtest_synch19_ZZstring505 from glob.obj
+shape frame 0 argbase 8 params 1
+label L0 was _ukp_ZZtest_synch19_ZZstring505
+  push sym ZZstring501
+  push imm 1
+  push imm 19
+  push param 0
+  call test_synch arity 4 depth 4
+  popn 4
+  return reg r0
+end
+rule ukp_ZZtest_synch25_ZZstring439 from glob.obj
+shape frame 0 argbase 8 params 1
+label L0 was _ukp_ZZtest_synch25_ZZstring439
+  push sym ZZstring433
+  push imm 1
+  push imm 25
+  push param 0
+  call test_synch arity 4 depth 4
+  popn 4
+  return reg r0
+end

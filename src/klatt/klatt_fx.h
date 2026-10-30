@@ -117,6 +117,8 @@ void     klatt_noise_shape(klatt_noise_filter *f, int32_t rate);
 void     klatt_noise_edge(klatt_noise_filter *f, int32_t rate, int32_t edge);
 void     klatt_noise_run(klatt_noise_filter *f, int stream, int16_t *buf,
                          int32_t n);
+void     klatt_wide_enable(int32_t rate);
+int      klatt_wide_on(void);
 int16_t  fxdivl(int32_t num, int32_t den);
 void     fxmul_vector(const int32_t *src, int16_t coef, int32_t *acc, int32_t n);
 void     fxmul1_vector(const int16_t *src, int16_t coef, int32_t *acc, int32_t n);
@@ -173,6 +175,7 @@ void zero_filter(filter_parms *fp, const zero_ABCs *z, int32_t *buf, int32_t n);
 /* buf must have two writable samples before it: the resonator seeds its own
    history there and reads them back as y[n-1] and y[n-2]. */
 void pole_filter(filter_parms *fp, int32_t *buf, int32_t n);
+void pole_filter_exact(filter_parms *fp, int32_t *buf, int32_t n);
 void parallel0_filter(filter_parms *fp, int32_t *buf, int32_t n);
 
 extern const char KlattVersionString[];

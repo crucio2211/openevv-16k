@@ -81,6 +81,12 @@ SAMPLE_RATES = (
 	(0, 8000),
 	(1, 11025),
 	(3, 16000),
+	# Above sixteen thousand the engine's wideband voice makes the sound:
+	# 22,050 outright, the rest raised from it.
+	(2, 22050),
+	(4, 32000),
+	(5, 44100),
+	(6, 48000),
 )
 
 #: The volume boost levels: the name a setting carries and the gain it
@@ -198,6 +204,13 @@ PARAM_DICTIONARY = 3
 PARAM_SAMPLE_RATE = 5
 PARAM_REAL_WORLD = 8
 PARAM_LANGUAGE = 9
+
+#: Which pauses the engine shortens, numbered as the IBMTTS driver numbers its
+#: setting of the same name: nought never, one only where text stops with no
+#: punctuation, two always. One is how the engine starts.
+PARAM_PAUSE_MODE = 33
+PAUSE_MODES = (0, 1, 2)
+DEFAULT_PAUSE_MODE = 1
 
 # A voice's, likewise.
 VOICE_GENDER = 0
@@ -469,6 +482,8 @@ class Engine:
 		#: so that the driver can answer a settings dialog without calling
 		#: into the library from another thread.
 		self.voiceParams = {}
+		#: The pause mode the engine is in, which is the one it starts in.
+		self.pauseMode = DEFAULT_PAUSE_MODE
 
 	# ---- what the driver asks of it ----------------------------------
 
@@ -664,6 +679,16 @@ class Engine:
 			bitsPerSample=16,
 			outputDevice=config.conf["audio"]["outputDevice"],
 		)
+
+	def setPauseMode(self, mode):
+		"""Choose which pauses the engine shortens, between utterances."""
+		if mode == self.pauseMode:
+			return True
+		if self.setParam(PARAM_PAUSE_MODE, mode) < 0:
+			log.error("openevv: the library refused pause mode %r" % (mode,))
+			return False
+		self.pauseMode = mode
+		return True
 
 	def setSampleRate(self, hz):
 		"""Run the synthesiser at another rate, and move the player with it.

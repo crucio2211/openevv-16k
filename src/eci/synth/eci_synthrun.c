@@ -252,12 +252,22 @@ THIS void setPhonemeIndiciesRun(SynthThread *t, int32_t on, int32_t seq)
 /* The wideband voice is a different stream out of the engine, at a
    different rate, so the converter between it and the caller is built
    again for the format already in force. */
-void setWidebandRun(SynthThread *t, int32_t on, int32_t seq)
+THIS void setWidebandRun(SynthThread *t, int32_t on, int32_t seq)
 {
     (void)seq;
     stw_processRemaining(t);
     ST_WIDEBAND(t) = on != 0;
     stw_createAudioConverter(t, ST_FORMAT(t));
+    finished(t);
+}
+
+/* What was said before the change is finished under the setting it was said
+   under, so the flush comes first. */
+void setPausesRun(SynthThread *t, int32_t mode, int32_t seq)
+{
+    (void)seq;
+    stw_processRemaining(t);
+    ST_PAUSES(t) = mode;
     finished(t);
 }
 
@@ -476,6 +486,8 @@ ALIAS("?changeFluctuationStringRun@SynthThread@@QAEXJJ@Z",
 ALIAS("?changeVolumeRun@SynthThread@@QAEXJJ@Z", "changeVolumeRun");
 ALIAS("?setPhonemeIndiciesRun@SynthThread@@AAEXJJ@Z",
       "setPhonemeIndiciesRun");
+ALIAS("?setWidebandRun@SynthThread@@AAEXJJ@Z",
+      "setWidebandRun");
 ALIAS("?changeVoiceRun@SynthThread@@QAEXJJ@Z", "changeVoiceRun");
 ALIAS("?changeRomParamRun@SynthThread@@AAEXJJJ@Z", "changeRomParamRun");
 ALIAS("?changeFilterRun@SynthThread@@QAEXKKJ_N@Z", "changeFilterRun");
