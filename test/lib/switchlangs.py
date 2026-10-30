@@ -105,14 +105,17 @@ def main(path):
         shorter = sample_count_at(80)
         normal = sample_count_at(100)
         longer = sample_count_at(120)
-        if not shorter < normal < longer:
+        maximum = sample_count_at(150)
+        if not shorter < normal < longer < maximum:
             raise RuntimeError(
                 "consonant duration did not scale monotonically: "
-                "80%%=%d, 100%%=%d, 120%%=%d" % (shorter, normal, longer)
+                "80%%=%d, 100%%=%d, 120%%=%d, 150%%=%d"
+                % (shorter, normal, longer, maximum)
             )
         print(
             "switchlangs: 32-bit consonant duration scaling passed "
-            "(80%%=%d, 100%%=%d, 120%%=%d samples)" % (shorter, normal, longer),
+            "(80%%=%d, 100%%=%d, 120%%=%d, 150%%=%d samples)"
+            % (shorter, normal, longer, maximum),
             flush=True,
         )
         if dll.eciSetParam(handle, PARAM_CONSONANT_DURATION, default_duration) < 0:
