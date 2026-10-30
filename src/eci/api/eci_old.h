@@ -77,11 +77,16 @@ typedef struct OldInst {
     /* And eciPauseMode, which goes the same way. */
     int32_t  pauses;
     int32_t  pauses_sent;
+    /* The vowel-duration parameter follows pauses on the older interface,
+       then is forwarded to the newer engine API. */
+    int32_t  vowel_duration_percent;
+    int32_t  vowel_duration_sent;
 } OldInst;
 
 /* What eciPauseMode a new instance starts with, which eciSetDefaultParam
    sets as it does the eighteen it has a table for. */
 extern int32_t g_DefaultPauses;
+extern int32_t g_DefaultVowelDuration;
 
 #define OI_NEW(h)            ((h)->fresh)
 #define OI_CALLBACK(h)       ((h)->callback)

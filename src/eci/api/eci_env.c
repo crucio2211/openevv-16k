@@ -596,6 +596,14 @@ int ev_sendChangedEnvironment(OldInst *h, Environment env, int32_t force)
         h->pauses_sent = h->pauses;
     }
 
+    if (h->vowel_duration_percent != h->vowel_duration_sent) {
+        if (setECIerror(api_set_param(OI_NEW(h), 0,
+                                      ECI_PARAM_VOWEL_DURATION,
+                                      h->vowel_duration_percent), h))
+            return 0;
+        h->vowel_duration_sent = h->vowel_duration_percent;
+    }
+
     /* The language first and on its own, because a change of family has to
        be noticed before the romanizer setting is decided. */
     if (force || e[ENV_LANGUAGE] != sent[ENV_LANGUAGE]) {
@@ -715,6 +723,14 @@ int32_t STDCALL ev_setParam(OldInst *h, int32_t which, int32_t value)
             return -1;
         old = inst->pauses;
         inst->pauses = value;
+        return old;
+    }
+
+    if (which == ECI_OLD_VOWEL_DURATION) {
+        if (value < 50 || value > 150)
+            return -1;
+        old = inst->vowel_duration_percent;
+        inst->vowel_duration_percent = value;
         return old;
     }
 

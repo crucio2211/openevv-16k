@@ -208,6 +208,8 @@ struct SynthThread {
 #define ECI_PARAM_PAUSES    22
 #define ECI_PARAM_VOWEL_DURATION 23
 #define ECI_OLD_PAUSES      33
+#define ECI_OLD_VOWEL_DURATION 34
+#define VOWEL_DURATION_DEFAULT 97
 #define PAUSES_NONE         0
 #define PAUSES_AT_END       1
 #define PAUSES_ALWAYS       2

@@ -209,7 +209,7 @@ PARAM_LANGUAGE = 9
 #: setting of the same name: nought never, one only where text stops with no
 #: punctuation, two always. One is how the engine starts.
 PARAM_PAUSE_MODE = 33
-PARAM_VOWEL_DURATION = 23
+PARAM_VOWEL_DURATION = 34
 PAUSE_MODES = (0, 1, 2)
 DEFAULT_PAUSE_MODE = 1
 DEFAULT_VOWEL_DURATION = 97
