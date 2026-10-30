@@ -25,6 +25,13 @@ jobs:
           EVV_NOTATION_LANG=enus python3 tools/rules/notation.py build > /dev/null
           python3 tools/module/dict.py build
 
+      - name: Smoke-test Finnish and Brazilian Portuguese language switching
+        run: |
+          set -eux
+          LANGS="lang/enus lang/fifi lang/ptbr"
+          make so RULES=c EVVPLAIN=1 LANGS="$LANGS" -j2
+          python3 test/lib/switchlangs.py build/libeci.so
+
       - name: Build 64-bit engine with all 12 languages
         run: |
           set -eux
