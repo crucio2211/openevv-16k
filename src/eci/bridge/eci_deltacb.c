@@ -87,26 +87,25 @@ int32_t vowelDurationAdjust(delta_state *d, int32_t *duration)
     return 0;
 }
 
-/* The US English consonant rules keep this duration as a 32-bit
-   fixed-point value at state offset 2224. The phoneme-specific rules write
-   its integer half at offset 2226, so the complete 32-bit cell must be
-   scaled, just as the nucleus-duration rule scales its 32-bit cell. */
-int32_t consonantDurationAdjust(delta_state *d, int32_t *duration)
+/* The US English phoneme-duration rules store the actual signed
+   16-bit duration at state offset 2226. The dispatcher passes that exact
+   cell after the selected eng_ph_*_dur rule has populated it. */
+int32_t consonantDurationAdjust(delta_state *d, int16_t *duration)
 {
-    int32_t percent;
-    int64_t adjusted;
+    int32_t percent, value, adjusted;
 
     if (d == 0 || duration == 0 || ELOQC(d) == 0)
         return 0;
     percent = ELOQ_CONSONANT_DURATION(d);
     if (percent < 50 || percent > 150)
         percent = 100;
-    adjusted = ((int64_t)*duration * percent + 50) / 100;
-    if (adjusted > INT32_MAX)
-        adjusted = INT32_MAX;
-    else if (adjusted < INT32_MIN)
-        adjusted = INT32_MIN;
-    *duration = (int32_t)adjusted;
+    value = (int32_t)*duration;
+    adjusted = (value * percent + (value >= 0 ? 50 : -50)) / 100;
+    if (adjusted > 32767)
+        adjusted = 32767;
+    else if (adjusted < -32768)
+        adjusted = -32768;
+    *duration = (int16_t)adjusted;
     return 0;
 }
 
