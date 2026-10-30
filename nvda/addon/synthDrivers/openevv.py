@@ -239,9 +239,10 @@ class SynthDriver(SynthDriver):
 			False,
 		),
 		# Translators: Label for the US English consonant duration slider.
+		# The slider spans the engine's full supported range of 80 to 150 percent.
 		NumericDriverSetting(
 			"consonantDuration",
-			_("C&onsonant duration (0=80%, 50=100%, 100=120%)"),
+			_("C&onsonant duration (0=80%, 50=115%, 100=150%)"),
 			False,
 		),
 		# Translators: Label for a setting in voice settings dialog.
