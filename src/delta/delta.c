@@ -2567,6 +2567,12 @@ void vinitloc_new(delta_state *d, delta_operand *out, const delta_loc *loc)
         const delta_stmt *e = &vstmtbl[loc->kind];
         int32_t f = loc->field;
 
+        if (f > 10) {
+            fprintf(stderr, "vinitloc_new: kind=%d field=%d loc=%p\n",
+                    loc->kind, f, (const void *)loc);
+            fflush(stderr);
+        }
+
         out->ptr = e->get[f]((char *)loc + 4);
         out->kind = e->fields[f].kind;
         out->flag = e->fields[f].flag;
