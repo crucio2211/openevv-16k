@@ -22,6 +22,7 @@ jobs:
       - name: Apply the built-in English pronunciation dictionary
         run: |
           set -eux
+          python3 tools/rules/consts.py enus
           EVV_NOTATION_LANG=enus python3 tools/rules/notation.py build > /dev/null
           python3 tools/module/dict.py build
 
