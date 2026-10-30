@@ -19,6 +19,12 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq mingw-w64 python3 zip
 
+      - name: Apply the built-in English pronunciation dictionary
+        run: |
+          set -eux
+          EVV_NOTATION_LANG=enus python3 tools/rules/notation.py build > /dev/null
+          python3 tools/module/dict.py build
+
       - name: Build 64-bit engine with all 12 languages
         run: |
           set -eux

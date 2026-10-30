@@ -188,6 +188,7 @@ def main():
 
     with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as z:
         z.writestr("manifest.ini", manifest)
+        z.write(os.path.join(ADDON, "installTasks.py"), "installTasks.py")
         for leaf in ("openevv.py", "_openevv.py"):
             z.write(os.path.join(ADDON, "synthDrivers", leaf), "synthDrivers/" + leaf)
         for path, name in LIBRARIES:
