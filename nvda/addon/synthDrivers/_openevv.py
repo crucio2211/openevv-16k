@@ -115,7 +115,9 @@ DICT_PREFIXES = {
 	0x30001: "frc",
 	0x40000: "deu",
 	0x50000: "ita",
+	0x70000: "ptb",
 	0x80000: "jpn",
+	0x90000: "fin",
 	0x110000: "pol",
 }
 
@@ -262,7 +264,9 @@ LOCALES = {
 	0x30001: "fr_CA",
 	0x40000: "de_DE",
 	0x50000: "it_IT",
+	0x70000: "pt_BR",
 	0x80000: "ja_JP",
+	0x90000: "fi_FI",
 	0x110000: "pl_PL",
 }
 
@@ -278,7 +282,9 @@ LANGUAGE_NAMES = {
 	0x30001: "Canadian French",
 	0x40000: "German",
 	0x50000: "Italian",
+	0x70000: "Brazilian Portuguese",
 	0x80000: "Japanese",
+	0x90000: "Finnish",
 	0x110000: "Polish",
 }
 

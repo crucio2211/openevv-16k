@@ -223,8 +223,7 @@ extern THIS void changeEmphasisRun(SynthThread *t, int32_t seq)
     MANGLED("?changeEmphasisRun@SynthThread@@QAEXJ@Z");
 extern THIS void setPhonemeIndiciesRun(SynthThread *t, int32_t v, int32_t seq)
     MANGLED("?setPhonemeIndiciesRun@SynthThread@@AAEXJJ@Z");
-extern THIS void setWidebandRun(SynthThread *t, int32_t v, int32_t seq)
-    MANGLED("?setWidebandRun@SynthThread@@AAEXJJ@Z");
+extern void setWidebandRun(SynthThread *t, int32_t v, int32_t seq);
 extern THIS void insertIndexRun(SynthThread *t, int32_t v, int32_t seq)
     MANGLED("?insertIndexRun@SynthThread@@AAEXJJ@Z");
 extern THIS void insertStringIndexRun(SynthThread *t, char *s, int32_t seq)
@@ -918,7 +917,7 @@ THIS int32_t st_setPhonemeIndicies(SynthThread *t, int32_t v)
     return sendValue(t, MSG_PHONEME_INDEX, &vt_setPhonemeIndicies, v);
 }
 
-THIS int32_t st_setWideband(SynthThread *t, int32_t v)
+int32_t st_setWideband(SynthThread *t, int32_t v)
 {
     return sendValue(t, MSG_WIDEBAND, &vt_setWideband, v);
 }
@@ -1000,8 +999,8 @@ TABLE(vt_changeFluctuationString, destroy_plain,
 TABLE(vt_changeVoice, destroy_plain, run_changeVoice);
 TABLE(vt_changeEmphasis, destroy_plain, run_changeEmphasis);
 TABLE(vt_setPhonemeIndicies, destroy_plain, run_setPhonemeIndicies);
-TABLE(vt_setWideband, destroy_plain, run_setWideband);
 TABLE(vt_insertIndex, destroy_plain, run_insertIndex);
+TABLE(vt_setWideband, destroy_plain, run_setWideband);
 
 /* The names the rest of the engine reaches all of this by. */
 ALIAS("??_7ETImsgAddText@@6B@", "vt_addText");
@@ -1022,7 +1021,6 @@ ALIAS("??_7ETImsgChangeFluctuationString@@6B@",
 ALIAS("??_7ETImsgChangeVoice@@6B@", "vt_changeVoice");
 ALIAS("??_7ETImsgChangeEmphasis@@6B@", "vt_changeEmphasis");
 ALIAS("??_7ETImsgSetPhonemeIndicies@@6B@", "vt_setPhonemeIndicies");
-ALIAS("??_7ETImsgSetWideband@@6B@", "vt_setWideband");
 ALIAS("??_7ETImsgInsertIndex@@6B@", "vt_insertIndex");
 ALIAS("??_7ETImsgInsertStringIndex@@6B@", "vt_insertStringIndex");
 ALIAS("??_7ETImsgInsertAudioIndex@@6B@", "vt_insertAudioIndex");
@@ -1046,7 +1044,6 @@ ALIAS("?run@ETImsgChangeFluctuationString@@UAEXXZ",
 ALIAS("?run@ETImsgChangeVoice@@UAEXXZ", "run_changeVoice");
 ALIAS("?run@ETImsgChangeEmphasis@@UAEXXZ", "run_changeEmphasis");
 ALIAS("?run@ETImsgSetPhonemeIndicies@@UAEXXZ", "run_setPhonemeIndicies");
-ALIAS("?run@ETImsgSetWideband@@UAEXXZ", "run_setWideband");
 ALIAS("?run@ETImsgInsertIndex@@UAEXXZ", "run_insertIndex");
 ALIAS("?run@ETImsgInsertStringIndex@@UAEXXZ", "run_insertStringIndex");
 ALIAS("?run@ETImsgInsertAudioIndex@@UAEXXZ", "run_insertAudioIndex");
