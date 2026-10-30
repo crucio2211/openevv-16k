@@ -7,7 +7,7 @@ rule init_vars takes 1
   instead
   variable g168 word 192
   variable g568 word 788
-  variable gbdc word 1968
+  variable gbdc word 1970
   variable gc30 word 2030
   variable gc50 word 2044
   variable ge30 word 2456
