@@ -2568,7 +2568,8 @@ void vinitloc_new(delta_state *d, delta_operand *out, const delta_loc *loc)
         int32_t f = loc->field;
 
         ptrdiff_t state_offset = (const char *)loc - (const char *)d;
-        if (state_offset >= 1300 && state_offset <= 1600) {
+        if ((state_offset >= 1900 && state_offset <= 2000) ||
+            (state_offset >= 2400 && state_offset <= 2550)) {
             fprintf(stderr, "vinitloc_new: offset=%td kind=%d field=%d\n",
                     state_offset, loc->kind, f);
             fflush(stderr);
