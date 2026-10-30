@@ -22,7 +22,6 @@ jobs:
       - name: Apply the built-in English pronunciation dictionary
         run: |
           set -eux
-          python3 tools/rules/consts.py enus
           make rulecode LANGS="lang/enus"
           EVV_LANG_DIR=lang/enus python3 tools/module/dict.py build
 
