@@ -2567,11 +2567,10 @@ void vinitloc_new(delta_state *d, delta_operand *out, const delta_loc *loc)
         const delta_stmt *e = &vstmtbl[loc->kind];
         int32_t f = loc->field;
 
-        static int reported_bad_location;
-        if (f > 10 && !reported_bad_location) {
-            reported_bad_location = 1;
-            fprintf(stderr, "vinitloc_new: kind=%d field=%d loc=%p\n",
-                    loc->kind, f, (const void *)loc);
+        ptrdiff_t state_offset = (const char *)loc - (const char *)d;
+        if (state_offset >= 1300 && state_offset <= 1600) {
+            fprintf(stderr, "vinitloc_new: offset=%td kind=%d field=%d\n",
+                    state_offset, loc->kind, f);
             fflush(stderr);
         }
 
