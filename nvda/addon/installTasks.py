@@ -66,9 +66,6 @@ def onInstall():
 	for source, target in to_copy:
 		if os.path.exists(target):
 			continue
-		try:
-			shutil.copy2(source, target)
-		except OSError:
-			# Do not fail an add-on update because a legacy dictionary could not
-			# be copied; leave its original in place for the user to recover.
-			pass
+		# An error must abort the install: NVDA will then keep the old add-on
+		# directory, which still contains the dictionary that could not be copied.
+		shutil.copy2(source, target)
