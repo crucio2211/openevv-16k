@@ -232,17 +232,10 @@ class SynthDriver(SynthDriver):
 		# Translators: Label for a setting in voice settings dialog.
 		NumericDriverSetting("breathiness", _("Breathi&ness"), False),
 		# Translators: Label for the US English vowel duration slider. The
-		# slider spans actual rule multipliers from 80 to 120 percent.
+		# slider spans the engine's full supported range of 50 to 150 percent.
 		NumericDriverSetting(
 			"vowelDuration",
-			_("&Vowel duration (0=80%, 50=100%, 100=120%)"),
-			False,
-		),
-		# Translators: Label for the US English consonant duration slider.
-		# The slider spans the engine's full supported range of 80 to 150 percent.
-		NumericDriverSetting(
-			"consonantDuration",
-			_("C&onsonant duration (0=80%, 50=115%, 100=150%)"),
+			_("&Vowel duration (0=50%, 50=100%, 100=150%)"),
 			False,
 		),
 		# Translators: Label for a setting in voice settings dialog.
@@ -579,18 +572,6 @@ class SynthDriver(SynthDriver):
 		span = _openevv.MAX_VOWEL_DURATION - _openevv.MIN_VOWEL_DURATION
 		percent = _openevv.MIN_VOWEL_DURATION + int(round(sliderValue * span / 100))
 		self._engine.control([(self._engine.setVowelDuration, (percent,))])
-
-	def _get_consonantDuration(self):
-		percent = self._engine.consonantDuration
-		return max(0, min(100, int(round(
-			(percent - _openevv.MIN_CONSONANT_DURATION) * 100
-			/ (_openevv.MAX_CONSONANT_DURATION - _openevv.MIN_CONSONANT_DURATION)
-		))))
-
-	def _set_consonantDuration(self, sliderValue):
-		span = _openevv.MAX_CONSONANT_DURATION - _openevv.MIN_CONSONANT_DURATION
-		percent = _openevv.MIN_CONSONANT_DURATION + int(round(sliderValue * span / 100))
-		self._engine.control([(self._engine.setConsonantDuration, (percent,))])
 
 	def _get_abbreviations(self):
 		return self._abbreviations
