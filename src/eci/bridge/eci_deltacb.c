@@ -99,6 +99,11 @@ int32_t consonantDurationAdjust(delta_state *d, int16_t *duration)
     if (percent < 50 || percent > 150)
         percent = 100;
     value = (int32_t)*duration;
+    /* The English rule stores this timing adjustment as a signed value.
+       A larger magnitude makes the placed consonant shorter, so reverse the
+       percentage for negative cells to keep 120% meaning longer speech. */
+    if (value < 0)
+        percent = 200 - percent;
     adjusted = (value * percent + (value >= 0 ? 50 : -50)) / 100;
     if (adjusted > 32767)
         adjusted = 32767;

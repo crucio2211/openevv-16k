@@ -89,7 +89,9 @@ def main(path):
             if dll.eciGetParam(handle, PARAM_CONSONANT_DURATION) != percent:
                 raise RuntimeError("consonant duration did not retain %d" % percent)
             spoken = 0
-            phrase = b"pepper poppy paper piper popper pepper poppy paper piper popper."
+            phrase = b" ".join(
+                [b"pepper poppy paper piper popper"] * 4
+            ) + b"."
             if not dll.eciAddText(handle, phrase):
                 raise RuntimeError("engine refused consonant-duration test text")
             if not dll.eciSynthesize(handle) or not dll.eciSynchronize(handle):
