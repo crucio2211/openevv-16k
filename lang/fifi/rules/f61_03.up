@@ -61,7 +61,7 @@ rule set_global_constants takes 1
   local cf0 bytes 8
   local h_rax
   local h_xmm0
-  variable g988 word 1418
+  variable g988 word 1420
   place p63ec
   place p6421
   place p6481
