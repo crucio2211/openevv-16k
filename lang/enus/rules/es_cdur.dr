@@ -8043,6 +8043,13 @@ label L4 was at_0x11b
 label L5 was $X6$99569
   push reg r6
   call ZZstarttest51 arity 1 depth 1
+  load movl ind reg r6 2224 into r0
+  mul imull imm 103 reg r0 into r0
+  push imm 100
+  widen cltd
+  popreg r7
+  div idivl reg r7
+  store movl reg r0 ind reg r6 2224
   addk 592 reg r6 into r0
   push reg r0
   addk 852 reg r6 into r0
