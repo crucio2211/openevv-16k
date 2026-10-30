@@ -135,6 +135,7 @@ struct SynthThread {
     int32_t       pauses;
     int32_t       tail;
     int32_t       vowel_duration_percent;
+    int32_t       consonant_duration_percent;
 };
 
 #define ST_ENGINES(t)   (&(t)->engines)
@@ -191,6 +192,7 @@ struct SynthThread {
 #define ST_PAUSES(t)    ((t)->pauses)
 #define ST_TAIL(t)      ((t)->tail)
 #define ST_VOWEL_DURATION(t) ((t)->vowel_duration_percent)
+#define ST_CONSONANT_DURATION(t) ((t)->consonant_duration_percent)
 
 /* What the wideband voice is called by the newer interface's settings and
    by the older one's. Both are ours, and include/eci.h publishes the older
@@ -207,9 +209,12 @@ struct SynthThread {
    Eloquence 64 drivers give their own setting of the same name. */
 #define ECI_PARAM_PAUSES    22
 #define ECI_PARAM_VOWEL_DURATION 23
+#define ECI_PARAM_CONSONANT_DURATION 24
 #define ECI_OLD_PAUSES      33
 #define ECI_OLD_VOWEL_DURATION 34
+#define ECI_OLD_CONSONANT_DURATION 35
 #define VOWEL_DURATION_DEFAULT 97
+#define CONSONANT_DURATION_DEFAULT 100
 #define PAUSES_NONE         0
 #define PAUSES_AT_END       1
 #define PAUSES_ALWAYS       2

@@ -107,6 +107,8 @@ int32_t STDCALL eo_getParam(OldInst *h, int32_t which)
         return inst->pauses;
     if (which == ECI_OLD_VOWEL_DURATION)
         return inst->vowel_duration_percent;
+    if (which == ECI_OLD_CONSONANT_DURATION)
+        return inst->consonant_duration_percent;
     if (which >= 0x11)
         return v;
     if (which == 0x0b)
@@ -130,6 +132,7 @@ int32_t STDCALL eo_getParam(OldInst *h, int32_t which)
    in. */
 int32_t g_DefaultPauses = PAUSES_DEFAULT;
 int32_t g_DefaultVowelDuration = VOWEL_DURATION_DEFAULT;
+int32_t g_DefaultConsonantDuration = CONSONANT_DURATION_DEFAULT;
 
 int32_t STDCALL es_getDefaultParam(int32_t which)
 {
@@ -139,6 +142,8 @@ int32_t STDCALL es_getDefaultParam(int32_t which)
         return g_DefaultPauses;
     if (which == ECI_OLD_VOWEL_DURATION)
         return g_DefaultVowelDuration;
+    if (which == ECI_OLD_CONSONANT_DURATION)
+        return g_DefaultConsonantDuration;
     if (which < 0 || which >= ENV_WORDS)
         return v;
 
@@ -168,6 +173,13 @@ int32_t STDCALL es_setDefaultParam(int32_t which, int32_t value)
             return -1;
         old = g_DefaultVowelDuration;
         g_DefaultVowelDuration = value;
+        return old;
+    }
+    if (which == ECI_OLD_CONSONANT_DURATION) {
+        if (value < 50 || value > 150)
+            return -1;
+        old = g_DefaultConsonantDuration;
+        g_DefaultConsonantDuration = value;
         return old;
     }
     if (which < 0 || which >= ENV_WORDS)
@@ -323,6 +335,8 @@ int STDCALL es_reset(OldInst *h)
     inst->pauses = g_DefaultPauses;
     inst->vowel_duration_percent = g_DefaultVowelDuration;
     inst->vowel_duration_sent = -1;
+    inst->consonant_duration_percent = g_DefaultConsonantDuration;
+    inst->consonant_duration_sent = -1;
 
     eo_clearManualQueue(inst);
     if (!eo_getDefaultEnvironment(inst, 0)

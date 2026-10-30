@@ -336,6 +336,7 @@ static void stl_build(SynthThread *t, void *app, void *state)
     ST_PAUSES(t) = PAUSES_DEFAULT;
     ST_TAIL(t) = 0;
     ST_VOWEL_DURATION(t) = 97;
+    ST_CONSONANT_DURATION(t) = CONSONANT_DURATION_DEFAULT;
 
     p = cpp_new(rm_bytes);
     ST_ROMAN(t) = p ? rz_ctor(p, t) : 0;

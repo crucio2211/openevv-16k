@@ -22,6 +22,7 @@
 
 extern delta_state *ew_machine(void *engine);
 extern int32_t setVowelDurationPercent(delta_state *d, int32_t percent);
+extern int32_t setConsonantDurationPercent(delta_state *d, int32_t percent);
 
 #define APP_CONCATENATIVE  0xc
 #define ECI_PARAM_LANGUAGE 2
@@ -320,9 +321,11 @@ THIS void changeLanguageRun(SynthThread *t, LangIdentifier *lang, int32_t seq)
 
     /* Each language has its own rule machine. Carry the user's vowel timing
        across a language switch so returning to US English keeps the slider. */
-    if (ST_ENGINE(t))
-        setVowelDurationPercent(ew_machine(ST_ENGINE(t)),
-                                 ST_VOWEL_DURATION(t));
+    if (ST_ENGINE(t)) {
+        delta_state *machine = ew_machine(ST_ENGINE(t));
+        setVowelDurationPercent(machine, ST_VOWEL_DURATION(t));
+        setConsonantDurationPercent(machine, ST_CONSONANT_DURATION(t));
+    }
 
     ST_PENDING(t) -= 1;
     sy_mutexRelease(lock);

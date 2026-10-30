@@ -27,6 +27,7 @@
 
 extern delta_state *ew_machine(void *engine);
 extern int32_t setVowelDurationPercent(delta_state *d, int32_t percent);
+extern int32_t setConsonantDurationPercent(delta_state *d, int32_t percent);
 
 /* Parameters the concatenative side understands. Numbered from its own list,
    which is not the one the published interface uses. */
@@ -284,6 +285,19 @@ void setVowelDurationRun(SynthThread *t, int32_t percent, int32_t seq)
     ST_VOWEL_DURATION(t) = percent;
     machine = ew_machine(ST_ENGINE(t));
     if (!setVowelDurationPercent(machine, percent))
+        stb_postEngineError(t);
+    finished(t);
+}
+
+void setConsonantDurationRun(SynthThread *t, int32_t percent, int32_t seq)
+{
+    delta_state *machine;
+
+    (void)seq;
+    stw_processRemaining(t);
+    ST_CONSONANT_DURATION(t) = percent;
+    machine = ew_machine(ST_ENGINE(t));
+    if (!setConsonantDurationPercent(machine, percent))
         stb_postEngineError(t);
     finished(t);
 }

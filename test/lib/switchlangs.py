@@ -13,6 +13,7 @@ import sys
 FRAME = 2048
 PARAM_INPUT_TYPE = 1
 PARAM_LANGUAGE = 9
+PARAM_CONSONANT_DURATION = 35
 LANGUAGES = {
     0x70000: ("Brazilian Portuguese", b"O rato roeu a roupa."),
     0x90000: ("Finnish", b"Hei maailma."),
@@ -32,6 +33,8 @@ def main(path):
     dll.eciSetOutputBuffer.argtypes = [ctypes.c_void_p, ctypes.c_int,
                                        ctypes.c_void_p]
     dll.eciSetParam.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int]
+    dll.eciGetParam.argtypes = [ctypes.c_void_p, ctypes.c_int]
+    dll.eciGetParam.restype = ctypes.c_int
     dll.eciGetVoiceName.argtypes = [ctypes.c_void_p, ctypes.c_int,
                                     ctypes.c_char_p]
     dll.eciAddText.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
@@ -72,6 +75,37 @@ def main(path):
             raise RuntimeError("engine refused the output buffer")
         print("switchlangs: set output buffer", flush=True)
         dll.eciSetParam(handle, PARAM_INPUT_TYPE, 1)
+
+        # Test the public parameter and the actual US English duration rule.
+        # Repeated /p/ words make the duration difference measurable.
+        default_duration = dll.eciGetParam(handle, PARAM_CONSONANT_DURATION)
+        if default_duration != 100:
+            raise RuntimeError("unexpected default consonant duration: %d" % default_duration)
+
+        def sample_count_at(percent):
+            nonlocal spoken
+            if dll.eciSetParam(handle, PARAM_CONSONANT_DURATION, percent) < 0:
+                raise RuntimeError("engine refused consonant duration %d" % percent)
+            if dll.eciGetParam(handle, PARAM_CONSONANT_DURATION) != percent:
+                raise RuntimeError("consonant duration did not retain %d" % percent)
+            spoken = 0
+            phrase = b"pepper poppy paper piper popper pepper poppy paper piper popper."
+            if not dll.eciAddText(handle, phrase):
+                raise RuntimeError("engine refused consonant-duration test text")
+            if not dll.eciSynthesize(handle) or not dll.eciSynchronize(handle):
+                raise RuntimeError("engine failed consonant-duration test synthesis")
+            if spoken == 0:
+                raise RuntimeError("consonant-duration test produced no audio")
+            return spoken
+
+        shorter = sample_count_at(80)
+        longer = sample_count_at(120)
+        if longer <= shorter:
+            raise RuntimeError("consonant-duration adjuster did not lengthen speech: 80%%=%d, 120%%=%d" % (shorter, longer))
+        print("switchlangs: consonant adjuster changed output length (%d -> %d samples)" % (shorter, longer), flush=True)
+        if dll.eciSetParam(handle, PARAM_CONSONANT_DURATION, default_duration) < 0:
+            raise RuntimeError("could not restore default consonant duration")
+
         for language, (name, sentence) in LANGUAGES.items():
             spoken = 0
             print("switchlangs: selecting " + name, flush=True)

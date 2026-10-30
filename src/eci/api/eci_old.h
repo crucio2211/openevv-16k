@@ -81,12 +81,17 @@ typedef struct OldInst {
        then is forwarded to the newer engine API. */
     int32_t  vowel_duration_percent;
     int32_t  vowel_duration_sent;
+    /* The consonant-duration parameter follows the vowel one and is sent
+       through the same environment-change path. */
+    int32_t  consonant_duration_percent;
+    int32_t  consonant_duration_sent;
 } OldInst;
 
 /* What eciPauseMode a new instance starts with, which eciSetDefaultParam
    sets as it does the eighteen it has a table for. */
 extern int32_t g_DefaultPauses;
 extern int32_t g_DefaultVowelDuration;
+extern int32_t g_DefaultConsonantDuration;
 
 #define OI_NEW(h)            ((h)->fresh)
 #define OI_CALLBACK(h)       ((h)->callback)

@@ -2,6 +2,9 @@ name: Windows 16kHz NVDA add-on (12 languages)
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - codex/remove-courage-enus
 
 permissions:
   contents: read

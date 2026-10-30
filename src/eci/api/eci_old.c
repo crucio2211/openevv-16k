@@ -508,6 +508,8 @@ static OldInst *eo_newInstance(int32_t language, int told)
     h->pauses_sent = PAUSES_DEFAULT;
     h->vowel_duration_percent = g_DefaultVowelDuration;
     h->vowel_duration_sent = VOWEL_DURATION_DEFAULT;
+    h->consonant_duration_percent = g_DefaultConsonantDuration;
+    h->consonant_duration_sent = CONSONANT_DURATION_DEFAULT;
 
     voices = cpp_new(CONCAT_VOICES_BYTES);
     OI_CONCAT(h) = voices ? scv_ctor(voices) : 0;

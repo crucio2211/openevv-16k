@@ -47,6 +47,14 @@ int32_t setVowelDurationPercent(delta_state *d, int32_t percent)
     return 1;
 }
 
+int32_t setConsonantDurationPercent(delta_state *d, int32_t percent)
+{
+    if (d == 0 || ELOQC(d) == 0 || percent < 50 || percent > 150)
+        return 0;
+    ELOQ_CONSONANT_DURATION(d) = percent;
+    return 1;
+}
+
 /* How long a phoneme name may be, which is four characters packed into a
    word rather than a string. */
 #define PHONEME_NAME_MAX 4
@@ -76,6 +84,27 @@ int32_t vowelDurationAdjust(delta_state *d, int32_t *duration)
     if (percent < 50 || percent > 150)
         percent = 97;
     *duration = (int32_t)(((int64_t)*duration * percent + 50) / 100);
+    return 0;
+}
+
+/* Apply the selected percentage to the native signed 16-bit consonant
+   duration cell supplied by the US English C rule. */
+int32_t consonantDurationAdjust(delta_state *d, int16_t *duration)
+{
+    int32_t percent, value, adjusted;
+
+    if (d == 0 || duration == 0 || ELOQC(d) == 0)
+        return 0;
+    percent = ELOQ_CONSONANT_DURATION(d);
+    if (percent < 50 || percent > 150)
+        percent = 100;
+    value = (int32_t)*duration;
+    adjusted = (value * percent + (value >= 0 ? 50 : -50)) / 100;
+    if (adjusted > 32767)
+        adjusted = 32767;
+    else if (adjusted < -32768)
+        adjusted = -32768;
+    *duration = (int16_t)adjusted;
     return 0;
 }
 

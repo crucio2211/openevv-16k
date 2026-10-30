@@ -8043,6 +8043,11 @@ label L4 was at_0x11b
 label L5 was $X6$99569
   push reg r6
   call ZZstarttest51 arity 1 depth 1
+  addk 2224 reg r6 into r0
+  push reg r0
+  push state 0
+  call consonantDurationAdjust arity 2 depth 2
+  popn 2
   addk 592 reg r6 into r0
   push reg r0
   addk 852 reg r6 into r0
