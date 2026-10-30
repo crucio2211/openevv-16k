@@ -3,59 +3,6 @@
 # `instead' because it is written afresh rather than re-expressed from one of
 # IBM's: nothing of IBM's is under it.
 
-rule init_vars takes 1
-  instead
-  local cf0 bytes 8
-  variable g168 word 192
-  variable g568 word 788
-  variable gbdc word 1970
-  variable gc30 word 2030
-  variable gc50 word 2044
-  variable ge30 word 2456
-  variable ge70 word 2508
-  place p69b8
-  place p69f5
-  place p6a28
-  call fence 0 sym eti_null
-  set global half 2510 to 5
-  call copyvar addr ge70 addr gbdc
-  set global half 2032 to 5
-  call move_i addr gc30 1
-  call npush_s 1
-  set cf0 to 65532
-  set global half 2046 to 1
-  call npop addr cf0
-  set global half 2046 to 5
-  set global half 1750 to 1
-  set global half 1906 to global half 1854
-  and 0 into global half 1342
-  set global half 1674 to global half 1678
-  set global half 2112 to global half 1298
-  set global half 3726 to global half 1298
-  set global half 3730 to global half 1298
-  set global half 3734 to global half 1298
-  and 0 into global half 1694
-  and 0 into global half 1670
-  set global word 1316 to global word 188
-  set global word 800 to global word 188
-  call rpta_loadp addr g168
-  call insert_l 1 1 sym eti_s_ef048 0
-  call lpta_storep addr g568
-  call lpta_loadp addr g568
-  call proj_def_mult 9 sym eti_s_ef049 addr g568
-  set global word 1436 to global word 800
-  set global word 728 to global word 792
-  and 0 into global half 1400
-  set global half 2282 to global half 2286
-  call settvar_i addr ge30 1
-  set global half 2650 to 4
-  and 0 into global half 2258
-  and 0 into global half 2838
-  set global word 3236 to global word 800
-  set global word 2532 to 1000000
-  call init_lang_vars
-  match
-end
 
 rule set_global_constants takes 1
   instead
