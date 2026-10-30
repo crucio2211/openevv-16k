@@ -4414,7 +4414,7 @@ rule normalize_text takes 3
   end
   place t2e47c_15 on 15
   set h_rsi to addr c130
-  call eng_tok_lookup h_rsi
+  call tok_lookup h_rsi
   set h_rax to answer
   if h_rax is 0
     go to p2e684
