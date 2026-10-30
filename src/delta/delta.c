@@ -2567,6 +2567,14 @@ void vinitloc_new(delta_state *d, delta_operand *out, const delta_loc *loc)
         const delta_stmt *e = &vstmtbl[loc->kind];
         int32_t f = loc->field;
 
+        ptrdiff_t state_offset = (const char *)loc - (const char *)d;
+        if ((state_offset >= 1900 && state_offset <= 2000) ||
+            (state_offset >= 2400 && state_offset <= 2550)) {
+            fprintf(stderr, "vinitloc_new: offset=%td kind=%d field=%d\n",
+                    state_offset, loc->kind, f);
+            fflush(stderr);
+        }
+
         out->ptr = e->get[f]((char *)loc + 4);
         out->kind = e->fields[f].kind;
         out->flag = e->fields[f].flag;
@@ -6754,6 +6762,14 @@ int calcSpeedFactori(delta_state *d, const delta_loc *in, delta_loc *out)
 void copyvar(delta_state *d, delta_loc *a, delta_loc *b)
 {
     delta_operand x, y;
+
+    if (((char *)a - (char *)d >= 1900 && (char *)a - (char *)d <= 2000) ||
+        ((char *)b - (char *)d >= 1900 && (char *)b - (char *)d <= 2000)) {
+        fprintf(stderr, "copyvar: a=%td(%d,%d) b=%td(%d,%d)\n",
+                (char *)a - (char *)d, a->kind, a->field,
+                (char *)b - (char *)d, b->kind, b->field);
+        fflush(stderr);
+    }
 
     if (EVV_AT(delta_vars *, d->vars)->testing)
         save_var(d, a);
