@@ -30,7 +30,7 @@ jobs:
           set -eux
           LANGS="lang/enus lang/fifi lang/ptbr"
           make so RULES=c EVVPLAIN=1 LANGS="$LANGS" -j2
-          gdb --return-child-result --batch -ex run -ex bt --args python3 -u test/lib/switchlangs.py build/libeci.so
+          gdb --return-child-result --batch -ex run --args python3 -u test/lib/switchlangs.py build/libeci.so
 
       - name: Build 64-bit C-rule engine with all 12 languages
         run: |
