@@ -45,6 +45,7 @@ int32_t eloqc_new(delta_state *d)
         return -2;
     memset(EVV_AT(void *, d->eloqc), 0, sizeof(Eloqc));
     ELOQ_VOWEL_DURATION(d) = 97;
+    ELOQ_CONSONANT_DURATION(d) = 100;
     ecilink_new(d);
     ELOQC(d)->unknown_98 = -1;
     return 0;
