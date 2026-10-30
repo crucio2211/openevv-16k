@@ -6763,6 +6763,14 @@ void copyvar(delta_state *d, delta_loc *a, delta_loc *b)
 {
     delta_operand x, y;
 
+    if (((char *)a - (char *)d >= 1900 && (char *)a - (char *)d <= 2000) ||
+        ((char *)b - (char *)d >= 1900 && (char *)b - (char *)d <= 2000)) {
+        fprintf(stderr, "copyvar: a=%td(%d,%d) b=%td(%d,%d)\n",
+                (char *)a - (char *)d, a->kind, a->field,
+                (char *)b - (char *)d, b->kind, b->field);
+        fflush(stderr);
+    }
+
     if (EVV_AT(delta_vars *, d->vars)->testing)
         save_var(d, a);
 
