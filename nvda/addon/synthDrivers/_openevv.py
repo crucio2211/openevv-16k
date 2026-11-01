@@ -138,15 +138,8 @@ DICT_RECHECK = 2.0
 
 
 def dictionaryDirectory():
-	"""Where a person puts their dictionaries: in the reader's own settings,
-	so that updating the add-on does not take them away."""
-	try:
-		import globalVars
-
-		base = globalVars.appArgs.configPath
-	except Exception:  # noqa: BLE001
-		return None
-	return os.path.join(base, "openevv", "dictionaries") if base else None
+	"""External dictionaries live beside the driver, not in NVDA's config folder."""
+	return None
 
 
 def _enginePath(path):
@@ -1034,12 +1027,6 @@ class Engine:
 
 		self._readVoiceParams()
 
-		# A folder to put dictionaries in, made so that it can be found.
-		if self.dictDirectory:
-			try:
-				os.makedirs(self.dictDirectory, exist_ok=True)
-			except OSError:
-				log.debugWarning("openevv: no dictionary folder", exc_info=True)
 		try:
 			self._applyDictionaries()
 		except Exception:  # noqa: BLE001
