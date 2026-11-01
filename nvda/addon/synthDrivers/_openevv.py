@@ -199,6 +199,13 @@ PARAM_SAMPLE_RATE = 5
 PARAM_REAL_WORLD = 8
 PARAM_LANGUAGE = 9
 
+#: Ours as well: which pauses the engine shortens. Nought none, one where text
+#: stops without punctuation, which is the library's default, two at every
+#: mark as well.
+PARAM_PAUSE_MODE = 33
+PAUSE_MODES = (0, 1, 2)
+DEFAULT_PAUSE_MODE = 1
+
 # A voice's, likewise.
 VOICE_GENDER = 0
 VOICE_HEAD_SIZE = 1
@@ -447,6 +454,7 @@ class Engine:
 		#: What the engine is running at, and therefore what the player is
 		#: built for. The two are moved together and never separately.
 		self.sampleRate = SAMPLE_RATE
+		self.pauseMode = DEFAULT_PAUSE_MODE
 		#: How much louder than the engine made it the samples are made on
 		#: the way out, and the tables that do it, built once per gain.
 		self.boost = 1.0
@@ -656,6 +664,16 @@ class Engine:
 
 	def setParam(self, which, value):
 		return self._dll.eciSetParam(self._instance, which, value)
+
+	def setPauseMode(self, mode):
+		"""Choose which pauses the engine shortens, between utterances."""
+		if mode == self.pauseMode:
+			return True
+		if self.setParam(PARAM_PAUSE_MODE, mode) < 0:
+			log.error("openevv: the library refused pause mode %r" % (mode,))
+			return False
+		self.pauseMode = mode
+		return True
 
 	def _newPlayer(self, hz):
 		return nvwave.WavePlayer(

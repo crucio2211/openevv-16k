@@ -234,6 +234,13 @@ class SynthDriver(SynthDriver):
 		# Translators: Label for a setting in voice settings dialog.
 		BooleanDriverSetting("abbreviations", _("Expand a&bbreviations"), False),
 		# Translators: Label for a setting in voice settings dialog.
+		DriverSetting(
+			"pauseMode",
+			_("Shorten pa&uses"),
+			False,
+			defaultVal=str(_openevv.DEFAULT_PAUSE_MODE),
+		),
+		# Translators: Label for a setting in voice settings dialog.
 		BooleanDriverSetting("voiceTags", _("Allow backquote voice &tags"), False),
 		# Translators: Label for a setting in voice settings dialog.
 		DriverSetting("samplerate", _("Sa&mple rate"), False),
@@ -557,6 +564,39 @@ class SynthDriver(SynthDriver):
 		self._engine.control(
 			[(self._engine.setParam, (_openevv.PARAM_DICTIONARY, 0 if enable else 1))],
 		)
+
+	def _get_availablePausemodes(self):
+		"""Which pauses the engine shortens, numbered as the IBMTTS and
+		Eloquence 64 drivers number their setting of the same name.
+
+		The engine pauses for as long as at a full stop wherever it finishes a
+		stretch of text: at the end of every utterance, and at every change of
+		voice, rate, pitch or language. Where the text ends in punctuation that
+		pause is the sentence's; where it does not, nothing asked for it.
+		"""
+		return OrderedDict(
+			(
+				# Translators: An option of the "Shorten pauses" setting.
+				("0", StringParameterInfo("0", _("Never"))),
+				# Translators: An option of the "Shorten pauses" setting.
+				("1", StringParameterInfo("1", _("At end of text only"))),
+				# Translators: An option of the "Shorten pauses" setting.
+				("2", StringParameterInfo("2", _("Always"))),
+			)
+		)
+
+	def _get_pauseMode(self):
+		return str(self._engine.pauseMode)
+
+	def _set_pauseMode(self, value):
+		try:
+			mode = int(value)
+		except (TypeError, ValueError):
+			mode = None
+		if mode not in _openevv.PAUSE_MODES:
+			log.error("openevv: %r is not a pause mode" % (value,))
+			return
+		self._engine.control([(self._engine.setPauseMode, (mode,))])
 
 	def _get_voiceTags(self):
 		return self._voiceTags
