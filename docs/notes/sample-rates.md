@@ -2,6 +2,8 @@
 
 Eloquence ran at 8 kHz or 11.025 kHz and nothing else. A caller can now ask for 16, 22.05, 32, 44.1 or 48 kHz as well, and for any rate up to 48,000 given in hertz. 11.025 stays the default.
 
+**The wideband companion above 16 kHz.** The NVDA driver offers 8,000, 11,025, 16,000, 22,050, 32,000, 44,100 and 48,000 Hz. At 16,000 the engine keeps its direct wideband synthesis path. Above 16,000, the companion is enabled automatically: a second Klatt synthesiser runs at 22,050 Hz on the same frames as the 11,025 Hz partner, and contributes the upper band. Its frame lengths and pitch timing remain paced by the partner. The 22,050 Hz setting uses that combined stream directly; 32,000 Hz and above are raised from it by the sinc converter. The companion runs all eight formants, extends the sixth through eighth formants to 10 kHz, raises the cascade without raising frication, retains four extra sample bits, and uses exact pole rounding to avoid the end-of-utterance click. See `src/klatt/klatt_wide.c`.
+
 There are two ways to get there and the engine does both, but they do not sound alike and only one is the default.
 
 **Raising the rate from 11.025, which is what the settings do.** Every rate above 11.025 kHz is produced by running the engine at 11.025 and raising the rate afterwards, so the voice is the same one at every setting. The engine is never asked for a rate it has to make up sibilants for.

@@ -72,15 +72,18 @@ SAMPLE_RATE = 11025
 #: thousand, one is eleven thousand and twenty five, and three is sixteen
 #: thousand.
 #:
-#: Sixteen thousand is synthesised outright, with the noise of the frication
-#: left open to the whole band (see src/eci/api/eci_env.c and
-#: src/klatt/klatt_fx.c), and not raised from eleven thousand and twenty
-#: five. Ordered by rate, so a reader is offered them in the order a person
-#: thinks of them.
+#: Sixteen thousand is synthesised outright. Above it, the wideband
+#: companion makes a 22,050 Hz stream and higher rates are raised from that.
+#: Ordered by rate, so a reader is offered them in the order a person thinks
+#: of them.
 SAMPLE_RATES = (
 	(0, 8000),
 	(1, 11025),
 	(3, 16000),
+	(2, 22050),
+	(4, 32000),
+	(5, 44100),
+	(6, 48000),
 )
 
 #: The volume boost levels: the name a setting carries and the gain it

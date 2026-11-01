@@ -64,7 +64,7 @@ jobs:
           name: OpenEVV 16kHz custom (run ${{ github.run_number }})
           body: |
             Custom 16kHz RULES=c build, all 12 languages (incl. Japanese, Finnish, Brazilian Portuguese):
-            - wideband klatt path (pole_filter_wide)
+            - automatic wideband companion above 16 kHz (8-formant upper band, partner-paced at 22.05 kHz)
             - hetero: quality, persona, address (+ plurals)
             - punct: bare marks removed from eng_char_name
             - poor/poors phones fixed
