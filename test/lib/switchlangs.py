@@ -79,13 +79,13 @@ def main(path):
         dll.eciRegisterCallback(handle, callback, None)
         if not dll.eciSetOutputBuffer(handle, FRAME, buffer):
             raise RuntimeError("engine refused the output buffer")
-        if not dll.eciSetParam(handle, PARAM_INPUT_TYPE, 1):
+        if dll.eciSetParam(handle, PARAM_INPUT_TYPE, 1) < 0:
             raise RuntimeError("engine refused the input type")
 
         for language, (name, sentence) in LANGUAGES.items():
             spoken = 0
             print("switchlangs: selecting " + name, flush=True)
-            if not dll.eciSetParam(handle, PARAM_LANGUAGE, language):
+            if dll.eciSetParam(handle, PARAM_LANGUAGE, language) < 0:
                 raise RuntimeError("engine refused " + name)
             print("switchlangs: selected " + name, flush=True)
 
@@ -107,7 +107,7 @@ def main(path):
             print("switchlangs: %s spoke %d samples" % (name, spoken),
                   flush=True)
 
-            if not dll.eciSetParam(handle, PARAM_LANGUAGE, 0x10000):
+            if dll.eciSetParam(handle, PARAM_LANGUAGE, 0x10000) < 0:
                 raise RuntimeError("engine could not return to English")
             print("switchlangs: returned to English", flush=True)
     finally:
