@@ -190,6 +190,7 @@ def main():
         z.writestr("manifest.ini", manifest)
         for leaf in ("openevv.py", "_openevv.py"):
             z.write(os.path.join(ADDON, "synthDrivers", leaf), "synthDrivers/" + leaf)
+        z.write(os.path.join(ADDON, "installTasks.py"), "installTasks.py")
         for path, name in LIBRARIES:
             z.write(path, ENGINE_DIR + "/" + name)
 
