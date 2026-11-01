@@ -35,6 +35,21 @@ jobs:
           make build/eci32.dll RULES=c LANGS="$LANGS" -j2
           ls -la build/eci32.dll
 
+      - name: Package NVDA add-on
+        run: |
+          set -eux
+          VERSION="1.3.7-main-${GITHUB_SHA::7}"
+          python3 nvda/build.py --version "$VERSION"
+          ls -lh build/openevv-${VERSION}.nvda-addon
+
+      - name: Upload NVDA add-on artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openevv-nvda-addon-main-${{ github.sha }}
+          path: build/openevv-1.3.7-main-${{ github.sha }}.nvda-addon
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Zip DLLs
         run: |
           mkdir -p out
