@@ -19,7 +19,20 @@ jobs:
       - name: Install toolchain
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq mingw-w64 python3 zip
+          sudo apt-get install -y -qq mingw-w64 python3 zip gdb
+
+      - name: Apply the built-in English pronunciation dictionary
+        run: |
+          set -eux
+          make rulecode LANGS="lang/enus"
+          EVV_LANG_DIR=lang/enus python3 tools/module/dict.py build
+
+      - name: Smoke-test Finnish and Brazilian Portuguese language switching
+        run: |
+          set -eux
+          LANGS="lang/enus lang/fifi lang/ptbr"
+          make so RULES=c EVVPLAIN=1 LANGS="$LANGS" -j2
+          gdb --return-child-result --batch -ex run -ex bt --args python3 -u test/lib/switchlangs.py build/libeci.so
 
       - name: Build eci.dll 64-bit (RULES=c, all languages)
         run: |
