@@ -32,7 +32,11 @@ jobs:
           set -eux
           LANGS="lang/enus lang/fifi lang/ptbr"
           make so RULES=c EVVPLAIN=1 LANGS="$LANGS" -j2
-          gdb --return-child-result --batch -ex run -ex bt --args python3 -u test/lib/switchlangs.py build/libeci.so
+          if ! python3 -u test/lib/switchlangs.py build/libeci.so; then
+            echo "Language smoke test failed; rerunning under GDB for diagnostics."
+            gdb --batch -ex run -ex "thread apply all bt full" --args python3 -u test/lib/switchlangs.py build/libeci.so || true
+            exit 1
+          fi
 
       - name: Build eci.dll 64-bit (RULES=c, all languages)
         run: |
