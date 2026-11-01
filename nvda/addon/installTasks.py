@@ -16,7 +16,7 @@ from logHandler import log
 NAME = "openevv"
 
 _DICTIONARY = re.compile(
-    r"^(enu|eng|esp|esm|fra|frc|deu|ita|ptb|jpn|fin|pol)(main|root|abbr|mainext)\\.dic$",
+    r"^(enu|eng|esp|esm|fra|frc|deu|ita|ptb|jpn|fin|pol)(main|root|abbr|mainext)\.dic$",
     re.IGNORECASE,
 )
 
