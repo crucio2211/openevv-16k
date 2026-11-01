@@ -32,6 +32,7 @@ def main(path):
         ctypes.c_void_p, ctypes.POINTER(ctypes.c_int)]
     dll.eciRegisterCallback.argtypes = [
         ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+    dll.eciRegisterCallback.restype = None
     dll.eciSetOutputBuffer.argtypes = [
         ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p]
     dll.eciSetParam.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int]
@@ -75,8 +76,7 @@ def main(path):
         return 1
 
     try:
-        if not dll.eciRegisterCallback(handle, callback, None):
-            raise RuntimeError("could not register audio callback")
+        dll.eciRegisterCallback(handle, callback, None)
         if not dll.eciSetOutputBuffer(handle, FRAME, buffer):
             raise RuntimeError("engine refused the output buffer")
         if not dll.eciSetParam(handle, PARAM_INPUT_TYPE, 1):
