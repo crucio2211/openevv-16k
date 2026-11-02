@@ -39,6 +39,24 @@ typedef int32_t (*VoiceFn)(int32_t value, void *a, void *b, void *c,
 
 extern int insertPhoneme(void *d, int32_t name, int32_t ms);
 
+/* Apply one shared US English vowel-duration factor to each nucleus handled
+   by assign_eng_nuc_durs. Keeping this adjustment in the rule helper means
+   every vowel nucleus that reaches that rule receives the same 95 percent
+   scaling, rather than scaling only a selected phoneme or duration class. */
+int32_t vowelDurationAdjust(delta_state *d, int32_t *duration)
+{
+    int64_t adjusted;
+
+    (void)d;
+    if (duration == 0)
+        return 0;
+
+    adjusted = (int64_t)*duration * 95;
+    adjusted += adjusted >= 0 ? 50 : -50;
+    *duration = (int32_t)(adjusted / 100);
+    return 0;
+}
+
 /* How long a phoneme name may be, which is four characters packed into a
    word rather than a string. */
 #define PHONEME_NAME_MAX 4
