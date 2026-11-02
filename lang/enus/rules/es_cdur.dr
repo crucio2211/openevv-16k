@@ -8042,7 +8042,7 @@ label L4 was at_0x11b
   popreg r1
 label L5 was $X6$99569
   load movzwl ind reg r6 2226 into r0
-  mul imull imm 88 reg r0 into r0
+  mul imull imm 90 reg r0 into r0
   push imm 100
   widen cltd
   popreg r7

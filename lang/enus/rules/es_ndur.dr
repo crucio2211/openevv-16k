@@ -3661,7 +3661,7 @@ label L3 was at_0x88
   push reg r6
   call dur_adjustments arity 1 depth 2
   load movl statefld 2788 into r0
-  mul imull imm 88 reg r0 into r0
+  mul imull imm 90 reg r0 into r0
   push imm 100
   widen cltd
   popreg r7
