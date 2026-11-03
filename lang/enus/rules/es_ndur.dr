@@ -1383,7 +1383,7 @@ label L44 was $X41$100011
   branch jne to L4
   addk 2788 reg r6 into r1
   load movl ind reg r1 0 into r0
-  mul imull imm 125 reg r0 into r0
+  mul imull imm 100 reg r0 into r0
   push imm 100
   jump to L58
 label L45 was $X43$100024
