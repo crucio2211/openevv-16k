@@ -6601,7 +6601,7 @@ label L83 was $X81$101790
   popreg r1
   branch jne to L89
 label L84 was $X70$101767
-  store movw imm 60 ind reg r6 2226
+  store movw imm 50 ind reg r6 2226
   jump to L80
 label L85 was $X82$101791
   load movl slotaddr -12 into r0
