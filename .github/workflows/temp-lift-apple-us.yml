@@ -28,10 +28,25 @@ jobs:
           unzip -q /tmp/apple-source/apple-modules.zip -d /tmp/apple-source
           ENU=$(find /tmp/apple-source -type f -name enu.dylib -print -quit)
           test -n "$ENU"
-          llvm-lipo -thin x86_64 "$ENU" -output /tmp/apple-source/enu-x86_64.dylib
+          python3 - "$ENU" /tmp/apple-source/enu-x86_64.dylib <<'PY'
+          import pathlib, struct, sys
+          raw = pathlib.Path(sys.argv[1]).read_bytes()
+          magic = raw[:4]
+          if magic == bytes.fromhex("cafebabe"):
+              n = struct.unpack_from(">I", raw, 4)[0]
+              for i in range(n):
+                  cpu, subtype, offset, size, align = struct.unpack_from(">IIIII", raw, 8 + 20*i)
+                  if cpu == 0x01000007:
+                      pathlib.Path(sys.argv[2]).write_bytes(raw[offset:offset+size])
+                      break
+              else:
+                  raise SystemExit("no x86_64 slice in Apple US module")
+          elif raw[:4] == bytes.fromhex("cffaedfe"):
+              pathlib.Path(sys.argv[2]).write_bytes(raw)
+          else:
+              raise SystemExit("unrecognized Apple module format: " + magic.hex())
+          PY
           llvm-nm -n /tmp/apple-source/enu-x86_64.dylib > /tmp/apple-source/enu.symbols
-          # The lifter's settings map intentionally lists only the two
-          # additional 6.1 languages. Add the known US dialect for this run.
           python3 - <<'PY'
           p = "tools/module/lift61.py"
           s = open(p, encoding="utf-8").read()
