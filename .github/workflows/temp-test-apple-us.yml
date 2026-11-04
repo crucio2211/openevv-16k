@@ -1,0 +1,27 @@
+name: Temporary Apple US module build validation
+
+on:
+  push:
+    branches:
+      - tmp/apple-eci61-us-lift-v2-20261105
+    paths:
+      - "lang/enus/**"
+      - "tools/rules/**"
+      - "tools/module/**"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build US English in bytecode mode
+        run: |
+          set -euxo pipefail
+          make -j2 probe RULES=bytecode LANGS="lang/enus"
+      - name: Build US English in C mode
+        run: |
+          set -euxo pipefail
+          make -j2 probe RULES=c LANGS="lang/enus"
