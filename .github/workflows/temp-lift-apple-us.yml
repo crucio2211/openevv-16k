@@ -45,7 +45,7 @@ jobs:
           else:
               raise SystemExit("unrecognized Apple module format")
           PY
-          git fetch origin tmp/lift64-apple-fixes-20261105
+          git fetch origin tmp/lift64-apple-fixes-v2-20261105
           git checkout FETCH_HEAD -- tools/rules/lift64.py
           python3 - <<'PY'
           p = "tools/module/lift61.py"
@@ -70,5 +70,5 @@ jobs:
           git config user.email "actions@users.noreply.github.com"
           git add lang/enus
           git commit -m "Port Apple ECI 6.1 US English module sources"
-          git push origin HEAD:tmp/apple-eci61-us-lift-v2-20261105
-          echo "Generated Apple US module committed to tmp/apple-eci61-us-lift-v2-20261105"
+          git push origin HEAD:tmp/apple-eci61-us-lift-v3-20261105
+          echo "Generated Apple US module committed to tmp/apple-eci61-us-lift-v3-20261105"
