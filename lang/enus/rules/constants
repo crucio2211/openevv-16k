@@ -104,3 +104,30 @@ bytes ukdur_string_53 0c 00
 bytes ukdur_string_531 09 00
 bytes ukdur_string_77 0d 00
 bytes ukdur_string_98 0e 00
+
+# Restored original authored strings used by the US phonetic rules.
+bytes fence_03 03
+bytes lts_bt 0b 1a
+bytes say_04 04
+bytes say_01 01
+bytes lts_wr 1c 18
+bytes say_18 18
+bytes say_1b 1b
+bytes lts_dg 0d 0f
+bytes say_11 11
+bytes lts_dj 0d 11
+bytes lts_mech 14 02 0c 10
+bytes say_141f07 14 1f 07
+bytes lts_mn 14 15
+bytes say_15 15
+bytes say_14 14
+bytes lts_mb 14 0b
+bytes lts_ng 15 0f
+bytes say_16 16
+bytes lts_then 1a 10 02 15
+bytes lts_ton 1a 04 15
+bytes lts_qu 17 05
+bytes lts_et 02 1a
+bytes say_07 07
+bytes lts_e 02
+bytes say_071b 07 1b
