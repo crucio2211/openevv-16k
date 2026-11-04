@@ -60,12 +60,13 @@ jobs:
             python3 tools/module/lift61.py /tmp/apple-source/enu-x86_64.dylib enus sets
             python3 tools/module/lift61.py /tmp/apple-source/enu-x86_64.dylib enus rules
             python3 tools/module/lift61.py /tmp/apple-source/enu-x86_64.dylib enus settings
+            python3 tools/rules/lift64.py census /tmp/apple-source/enu-x86_64.dylib || true
           } 2>&1 | tee /tmp/apple-source/lift-report.txt
           git checkout -b tmp/apple-eci61-us-lift-20261105
           git rm .github/workflows/temp-lift-apple-us.yml
           git config user.name "OpenEVV Apple 6.1 Lift"
           git config user.email "actions@users.noreply.github.com"
           git add lang/enus
-          git commit -m "Port Apple ECI 6.1 US English language module"
+          git commit -m "Port Apple ECI 6.1 US English module sources"
           git push origin HEAD:tmp/apple-eci61-us-lift-20261105
           echo "Generated Apple US module committed to tmp/apple-eci61-us-lift-20261105"
