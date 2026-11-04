@@ -1,0 +1,73 @@
+name: Temporary Apple ECI 6.1 US module lift
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/temp-lift-apple-us.yml
+
+permissions:
+  contents: read
+
+jobs:
+  lift:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install LLVM tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq llvm
+      - name: Download Apple US module and lift all 6.1 language sources
+        env:
+          APPLE_SOURCE_URL: "https://sdmntprindiasocentral.oaiusercontent.com/files/00000000-2584-8211-a4e8-e1b447ef2bfe/raw?se=2026-11-04T17%3A13%3A37Z&sp=r&sv=2026-02-06&sr=b&scid=3256101e-2694-5981-9e6c-8346bc488286&skoid=6fa9748a-b7b2-4b56-a932-8c1417549c47&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-11-04T03%3A55%3A56Z&ske=2026-11-05T03%3A55%3A56Z&sks=b&skv=2026-02-06&sig=uhHQUtKOTaDG9sSQ8pzEWVXWjC0DgqaW%2Bu%2FbVTh5RXY%3D"
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/apple-source
+          curl --fail --location --retry 2 "$APPLE_SOURCE_URL" -o /tmp/apple-source/apple-modules.zip
+          unzip -q /tmp/apple-source/apple-modules.zip -d /tmp/apple-source
+          ENU=$(find /tmp/apple-source -type f -name enu.dylib -print -quit)
+          test -n "$ENU"
+          llvm-lipo -thin x86_64 "$ENU" -output /tmp/apple-source/enu-x86_64.dylib
+          llvm-nm -n /tmp/apple-source/enu-x86_64.dylib > /tmp/apple-source/enu.symbols
+          # The lifter's settings map intentionally lists only the two
+          # additional 6.1 languages. Add the known US dialect for this run.
+          python3 - <<'PY'
+          p = "tools/module/lift61.py"
+          s = open(p, encoding="utf-8").read()
+          old = 'LANG_NUMBERS = {"fifi": (9, 0, "Static Engine FIN"),'
+          new = 'LANG_NUMBERS = {"enus": (1, 0, "Static Engine ENU"),\n                "fifi": (9, 0, "Static Engine FIN"),'
+          assert old in s
+          open(p, "w", encoding="utf-8").write(s.replace(old, new, 1))
+          PY
+          {
+            echo "=== Apple ECI 6.1 enu.dylib ==="
+            echo "source: $ENU"
+            echo "=== 6.1 globals ==="
+            python3 tools/module/lift61.py /tmp/apple-source/enu-x86_64.dylib enus globals
+            echo "=== 6.1 statements ==="
+            python3 tools/module/lift61.py /tmp/apple-source/enu-x86_64.dylib enus statements
+            echo "=== 6.1 sets and dictionary actions ==="
+            python3 tools/module/lift61.py /tmp/apple-source/enu-x86_64.dylib enus sets
+            echo "=== 6.1 rules ==="
+            python3 tools/module/lift61.py /tmp/apple-source/enu-x86_64.dylib enus rules
+            echo "=== 6.1 settings ==="
+            python3 tools/module/lift61.py /tmp/apple-source/enu-x86_64.dylib enus settings
+            echo "=== lift64 census ==="
+            python3 tools/rules/lift64.py census /tmp/apple-source/enu-x86_64.dylib || true
+          } 2>&1 | tee /tmp/apple-source/lift-report.txt
+          echo "=== generated files ===" >> /tmp/apple-source/lift-report.txt
+          git status --short lang/enus >> /tmp/apple-source/lift-report.txt
+          mkdir -p /tmp/apple-source/result
+          cp -a lang/enus /tmp/apple-source/result/enus
+          cp /tmp/apple-source/lift-report.txt /tmp/apple-source/result/
+          tar -czf apple-us-eci61-lift.tar.gz -C /tmp/apple-source/result .
+          sha256sum apple-us-eci61-lift.tar.gz
+          ls -lh apple-us-eci61-lift.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apple-us-eci61-lift
+          path: |
+            apple-us-eci61-lift.tar.gz
+            /tmp/apple-source/lift-report.txt
+          retention-days: 1
