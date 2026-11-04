@@ -20,7 +20,7 @@ jobs:
           sudo apt-get install -y -qq llvm
       - name: Download Apple US module and lift all 6.1 language sources
         env:
-          APPLE_SOURCE_URL: "https://sdmntprindiasocentral.oaiusercontent.com/files/00000000-a5d8-8211-b2c7-fccbd12da627/raw?se=2026-11-04T17%3A17%3A48Z&sp=r&sv=2026-02-06&sr=b&scid=dfda6a41-ed79-5037-ba52-fe55ca5d6b2b&skoid=6fa9748a-b7b2-4b56-a932-8c1417549c47&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-11-04T03%3A48%3A40Z&ske=2026-11-05T03%3A48%3A40Z&sks=b&skv=2026-02-06&sig=5qATP1u3ENLiXN7RoECe6xmkwJH54VoIGFyQQuAAZGA%3D"
+          APPLE_SOURCE_URL: "https://sdmntprseasia.oaiusercontent.com/files/00000000-e198-8207-9780-be70c0c567f2/raw?se=2026-11-04T17%3A24%3A19Z&sp=r&sv=2026-02-06&sr=b&scid=b23f5161-e6dd-5638-b08c-6ed4e7d76425&skoid=6fa9748a-b7b2-4b56-a932-8c1417549c47&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-11-04T03%3A48%3A05Z&ske=2026-11-05T03%3A48%3A05Z&sks=b&skv=2026-02-06&sig=f7GNn08Crntei13N0lagGm1wlWf6lmhD246RtgY5lvU%3D"
         run: |
           set -euo pipefail
           mkdir -p /tmp/apple-source
@@ -45,6 +45,8 @@ jobs:
           else:
               raise SystemExit("unrecognized Apple module format")
           PY
+          git fetch origin tmp/lift64-apple-fixes-20261105
+          git checkout FETCH_HEAD -- tools/rules/lift64.py
           python3 - <<'PY'
           p = "tools/module/lift61.py"
           s = open(p, encoding="utf-8").read()
@@ -62,11 +64,11 @@ jobs:
             python3 tools/module/lift61.py /tmp/apple-source/enu-x86_64.dylib enus settings
             python3 tools/rules/lift64.py census /tmp/apple-source/enu-x86_64.dylib || true
           } 2>&1 | tee /tmp/apple-source/lift-report.txt
-          git checkout -b tmp/apple-eci61-us-lift-20261105
+          git checkout -b tmp/apple-eci61-us-lift-v2-20261105
           git rm .github/workflows/temp-lift-apple-us.yml
           git config user.name "OpenEVV Apple 6.1 Lift"
           git config user.email "actions@users.noreply.github.com"
           git add lang/enus
           git commit -m "Port Apple ECI 6.1 US English module sources"
-          git push origin HEAD:tmp/apple-eci61-us-lift-20261105
-          echo "Generated Apple US module committed to tmp/apple-eci61-us-lift-20261105"
+          git push origin HEAD:tmp/apple-eci61-us-lift-v2-20261105
+          echo "Generated Apple US module committed to tmp/apple-eci61-us-lift-v2-20261105"
