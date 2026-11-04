@@ -65,3 +65,42 @@ bytes eti_s_1b9136     48 48
 bytes eti_s_1b9138     54
 bytes eti_s_1b9139     41 48
 bytes eti_s_1b913b     c7
+
+# UK English phonetic strings used by the imported duration rules.
+bytes ukdur_string_118 0f 00
+bytes ukdur_string_129 10 00
+bytes ukdur_string_188 02 00
+bytes ukdur_string_218 14 00
+bytes ukdur_string_234 15 00
+bytes ukdur_string_257 16 00
+bytes ukdur_string_271 18 18 01 00
+bytes ukdur_string_287 18 1e 00
+bytes ukdur_string_293 19 19 01 14 02 19 0c 10 00
+bytes ukdur_string_31 0a 00
+bytes ukdur_string_349 1b 1b 02 00
+bytes ukdur_string_361 1c 1c 01 19 10 03 15 0f 1a 04 15 00
+bytes ukdur_string_376 1d 1d 02 00
+bytes ukdur_string_38 0b 00
+bytes ukdur_string_380 03 00
+bytes ukdur_string_403 1e 00
+bytes ukdur_string_412 1f 1f 02 18 04 1f 02 1e 00
+bytes ukdur_string_419 20 00
+bytes ukdur_string_423 21 00
+bytes ukdur_string_428 23 23 15 03 24 18 00
+bytes ukdur_string_431 24 00
+bytes ukdur_string_436 25 26 27 04 00
+bytes ukdur_string_437 26 27 04 00
+bytes ukdur_string_438 27 04 00
+bytes ukdur_string_439 04 00
+bytes ukdur_string_464 2d 2e 2f 00
+bytes ukdur_string_465 2e 2f 00
+bytes ukdur_string_468 30 00
+bytes ukdur_string_471 05 05 01 00
+bytes ukdur_string_484 34 35 00
+bytes ukdur_string_493 06 3c 3d 3e 3f 40 41 00
+bytes ukdur_string_505 07 00
+bytes ukdur_string_521 08 08 18 1e 24 14 00
+bytes ukdur_string_53 0c 00
+bytes ukdur_string_531 09 00
+bytes ukdur_string_77 0d 00
+bytes ukdur_string_98 0e 00
