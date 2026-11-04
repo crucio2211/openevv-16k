@@ -21,11 +21,6 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq mingw-w64 python3 zip gdb
 
-      - name: Generate authored US duration constants
-        run: |
-          set -eux
-          make constants LANGS="lang/enus"
-
       - name: Apply the built-in English pronunciation dictionary
         run: |
           set -eux
