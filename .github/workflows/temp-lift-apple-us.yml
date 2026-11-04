@@ -20,7 +20,7 @@ jobs:
           sudo apt-get install -y -qq llvm
       - name: Download Apple US module and lift all 6.1 language sources
         env:
-          APPLE_SOURCE_URL: "https://sdmntprseasia.oaiusercontent.com/files/00000000-70e0-8207-9a3d-274afeccba4b/raw?se=2026-11-04T17%3A29%3A32Z&sp=r&sv=2026-02-06&sr=b&scid=d09ba1e4-2bff-518b-a4a5-ed1a7bf44f2d&skoid=6fa9748a-b7b2-4b56-a932-8c1417549c47&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-11-04T05%3A40%3A16Z&ske=2026-11-05T05%3A40%3A16Z&sks=b&skv=2026-02-06&sig=ix40lkagTj%2BFpo9wrEvCFdLPlT8tmMGFoLw495dEHNY%3D"
+          APPLE_SOURCE_URL: "https://sdmntprseasia.oaiusercontent.com/files/00000000-a44c-8207-95f5-79e55381b22b/raw?se=2026-11-05T00%3A00%3A48Z&sp=r&sv=2026-02-06&sr=b&scid=45a25cd3-cc3b-5e24-b495-99990c6da892&skoid=6fa9748a-b7b2-4b56-a932-8c1417549c47&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-11-04T22%3A31%3A10Z&ske=2026-11-05T22%3A31%3A10Z&sks=b&skv=2026-02-06&sig=OebJ%2BrHjhemspjufpJpF3XOf6I5gV%2B5n65U286W6tZs%3D"
         run: |
           set -euo pipefail
           mkdir -p /tmp/apple-source
