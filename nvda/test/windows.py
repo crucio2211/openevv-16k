@@ -170,7 +170,7 @@ def check_native_word(addon, text):
         check(label, "timed out after 15 seconds", 0)
         return
     if result.returncode:
-        detail = (result.stdout + "\\n" + result.stderr).strip()
+        detail = (result.stdout + "\n" + result.stderr).strip()
         if detail:
             note(detail[-1800:])
         check(label, result.returncode, 0)
