@@ -1,0 +1,364 @@
+# The rules of enus, lifted by tools/rules/lift64.py out of ETI
+# Eloquence 6.1 as Apple ships it, by tools/module/lift61.py. Each says
+# `instead' because it is written afresh rather than re-expressed from one of
+# IBM's: nothing of IBM's is under it.
+
+rule noun_cmpnd1 takes 6
+  instead
+  local c104 bytes 8
+  local c128 bytes 8
+  local c138 bytes 8
+  local c148 bytes 8
+  local c158 bytes 8
+  local vf8 word
+  local v100 word
+  local v110 word
+  local v118 word
+  local h_rdx
+  variable g218 word 280
+  variable g228 word 288
+  place p51367
+  set v110 to arg 4
+  place p513b6
+  set vf8 to state
+  place p513fb
+  set v118 to arg 5
+  set h_rdx to arg 1
+  call get_parm addr c158 h_rdx -6
+  set h_rdx to arg 2
+  call get_parm addr c148 h_rdx -6
+  set h_rdx to arg 3
+  call get_parm addr c138 h_rdx -6
+  set h_rdx to arg 4
+  call get_parm addr c128 h_rdx -6
+  set h_rdx to arg 5
+  call get_parm addr c104 h_rdx -4
+  call fence 0 sym eti_null
+  call starttest 38
+  set h_rdx to addr c148
+  call lpta_rpta_loadp addr c158 h_rdx
+  set h_rdx to 0
+  call actd_lookup 0 h_rdx 0
+  if answer is 0
+    go to p5150d
+  end
+  give up
+  place p5150d
+  set v100 to addr g228
+  place p51537
+  place t51537_39 on 39
+  set h_rdx to addr c138
+  call copyvar addr g218 h_rdx
+  set h_rdx to addr c128
+  call copyvar addr g228 h_rdx
+  call actd_goto
+  set unwind to 0
+  backtrack
+  place p515ab
+  place t515ab_1 on 1
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 7
+  go to p51a3a
+  place p515cb
+  place t515cb_2 on 2
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 8
+  go to p51a3a
+  place p515eb
+  place t515eb_3 on 3
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 9
+  go to p51a3a
+  place p5160b
+  place t5160b_4 on 4
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 10
+  go to p51a3a
+  place p5162b
+  place t5162b_5 on 5
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 11
+  go to p51a3a
+  place p5164b
+  place t5164b_6 on 6
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 12
+  go to p51a3a
+  place p5166b
+  place t5166b_7 on 7
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 13
+  go to p51a3a
+  place p5168b
+  place t5168b_8 on 8
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 14
+  go to p51a3a
+  place p516ab
+  place t516ab_9 on 9
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 15
+  go to p51a3a
+  place p516cb
+  place t516cb_10 on 10
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 16
+  go to p51a3a
+  place p516eb
+  place t516eb_11 on 11
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 17
+  go to p51a3a
+  place p5170b
+  place t5170b_12 on 12
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 18
+  go to p51a3a
+  place p5172b
+  place t5172b_13 on 13
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 19
+  go to p51a3a
+  place p5174b
+  place t5174b_14 on 14
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 20
+  go to p51a3a
+  place p5176b
+  place t5176b_15 on 15
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 21
+  go to p51a3a
+  place p5178b
+  place t5178b_16 on 16
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 22
+  go to p51a3a
+  place p517ab
+  place t517ab_17 on 17
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 23
+  go to p51a3a
+  place p517cb
+  place t517cb_18 on 18
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 24
+  go to p51a3a
+  place p517eb
+  place t517eb_19 on 19
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 25
+  go to p51a3a
+  place p5180b
+  place t5180b_20 on 20
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 26
+  go to p51a3a
+  place p5182b
+  place t5182b_21 on 21
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 27
+  go to p51a3a
+  place p5184b
+  place t5184b_22 on 22
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 28
+  go to p51a3a
+  place p5186b
+  place t5186b_23 on 23
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 29
+  go to p51a3a
+  place p5188b
+  place t5188b_24 on 24
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 30
+  go to p51a3a
+  place p518ab
+  place t518ab_25 on 25
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 31
+  go to p51a3a
+  place p518cb
+  place t518cb_26 on 26
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 32
+  go to p51a3a
+  place p518eb
+  place t518eb_27 on 27
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 33
+  go to p51a3a
+  place p5190b
+  place t5190b_28 on 28
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 34
+  go to p51a3a
+  place p5192b
+  place t5192b_29 on 29
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 35
+  go to p51a3a
+  place p5194b
+  place t5194b_30 on 30
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 36
+  go to p51a3a
+  place p5196b
+  place t5196b_31 on 31
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 37
+  go to p51a3a
+  place p5198b
+  place t5198b_32 on 32
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 38
+  go to p51a3a
+  place p519ab
+  place t519ab_33 on 33
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 39
+  go to p51a3a
+  place p519c8
+  place t519c8_34 on 34
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 40
+  go to p51a3a
+  place p519e5
+  place t519e5_35 on 35
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 41
+  go to p51a3a
+  place p51a02
+  place t51a02_36 on 36
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 42
+  go to p51a3a
+  place p51a1f
+  place t51a1f_37 on 37
+  set h_rdx to addr g228
+  call lpta_rpta_loadp addr g218 h_rdx
+  set h_rdx to 43
+  place p51a3a
+  call setd_lookup 1 h_rdx
+  if answer is not 0
+    go to p51a5b
+  end
+  place p51a52
+  place t51a52_40 on 40
+  place t51a52_42 on 42
+  place t51a52_43 on 43
+  place t51a52_45 on 45
+  place t51a52_47 on 47
+  place t51a52_49 on 49
+  place t51a52_51 on 51
+  place t51a52_53 on 53
+  place t51a52_55 on 55
+  place t51a52_57 on 57
+  place t51a52_59 on 59
+  place t51a52_61 on 61
+  place t51a52_63 on 63
+  place t51a52_65 on 65
+  place t51a52_67 on 67
+  place t51a52_69 on 69
+  place t51a52_71 on 71
+  place t51a52_73 on 73
+  place t51a52_75 on 75
+  place t51a52_77 on 77
+  place t51a52_79 on 79
+  place t51a52_81 on 81
+  place t51a52_83 on 83
+  place t51a52_85 on 85
+  place t51a52_87 on 87
+  place t51a52_89 on 89
+  place t51a52_91 on 91
+  place t51a52_93 on 93
+  place t51a52_95 on 95
+  place t51a52_97 on 97
+  place t51a52_99 on 99
+  place t51a52_101 on 101
+  place t51a52_103 on 103
+  place t51a52_105 on 105
+  place t51a52_107 on 107
+  place t51a52_109 on 109
+  place t51a52_111 on 111
+  place t51a52_113 on 113
+  place t51a52_115 on 115
+  set cell c104 field to 1
+  place p51a5b
+  place t51a5b_41 on 41
+  place t51a5b_44 on 44
+  place t51a5b_46 on 46
+  place t51a5b_48 on 48
+  place t51a5b_50 on 50
+  place t51a5b_52 on 52
+  place t51a5b_54 on 54
+  place t51a5b_56 on 56
+  place t51a5b_58 on 58
+  place t51a5b_60 on 60
+  place t51a5b_62 on 62
+  place t51a5b_64 on 64
+  place t51a5b_66 on 66
+  place t51a5b_68 on 68
+  place t51a5b_70 on 70
+  place t51a5b_72 on 72
+  place t51a5b_74 on 74
+  place t51a5b_76 on 76
+  place t51a5b_78 on 78
+  place t51a5b_80 on 80
+  place t51a5b_82 on 82
+  place t51a5b_84 on 84
+  place t51a5b_86 on 86
+  place t51a5b_88 on 88
+  place t51a5b_90 on 90
+  place t51a5b_92 on 92
+  place t51a5b_94 on 94
+  place t51a5b_96 on 96
+  place t51a5b_98 on 98
+  place t51a5b_100 on 100
+  place t51a5b_102 on 102
+  place t51a5b_104 on 104
+  place t51a5b_106 on 106
+  place t51a5b_108 on 108
+  place t51a5b_110 on 110
+  place t51a5b_112 on 112
+  place t51a5b_114 on 114
+  put cell c104 field into arg 5 at 2 half
+  match
+end
