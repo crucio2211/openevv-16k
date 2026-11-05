@@ -20,7 +20,7 @@ jobs:
           sudo apt-get install -y -qq llvm
       - name: Download Apple US module and lift all 6.1 language sources
         env:
-          APPLE_SOURCE_URL: "https://sdmntprseasia.oaiusercontent.com/files/00000000-a104-8207-9a2c-522621813bfc/raw?se=2026-11-05T00%3A49%3A10Z&sp=r&sv=2026-02-06&sr=b&scid=b8fd3d8a-abea-5cc0-add7-4fee36a941e7&skoid=6fa9748a-b7b2-4b56-a932-8c1417549c47&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-11-04T22%3A39%3A54Z&ske=2026-11-05T22%3A39%3A54Z&sks=b&skv=2026-02-06&sig=P/u4Wz4Pp5YcwxciHBCtXJEanRtcGdkJwlPayVVXgpY%3D"
+          APPLE_SOURCE_URL: "https://sdmntprseasia.oaiusercontent.com/files/00000000-c558-8207-a5e9-0a94341ed0fd/raw?se=2026-11-05T01%3A05%3A21Z&sp=r&sv=2026-02-06&sr=b&scid=c79f6c27-970c-54e5-a670-c2cebf5c0319&skoid=6fa9748a-b7b2-4b56-a932-8c1417549c47&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-11-05T00%3A21%3A23Z&ske=2026-11-06T00%3A21%3A23Z&sks=b&skv=2026-02-06&sig=8jf%2BhyHy685N0G6vT0%2B4GI2a9WxXebzxestIJpP1NUg%3D"
         run: |
           set -euo pipefail
           mkdir -p /tmp/apple-source
@@ -64,11 +64,11 @@ jobs:
             python3 tools/module/lift61.py /tmp/apple-source/enu-x86_64.dylib enus settings
             python3 tools/rules/lift64.py census /tmp/apple-source/enu-x86_64.dylib || true
           } 2>&1 | tee /tmp/apple-source/lift-report.txt
-          git checkout -b tmp/apple-eci61-us-lift-v3-20261105
+          git checkout -b tmp/apple-eci61-us-lift-v4-20261105
           git rm .github/workflows/temp-lift-apple-us.yml
           git config user.name "OpenEVV Apple 6.1 Lift"
           git config user.email "actions@users.noreply.github.com"
           git add lang/enus
           git commit -m "Port Apple ECI 6.1 US English module sources"
-          git push origin HEAD:tmp/apple-eci61-us-lift-v3-20261105
-          echo "Generated Apple US module committed to tmp/apple-eci61-us-lift-v3-20261105"
+          git push origin HEAD:tmp/apple-eci61-us-lift-v4-20261105
+          echo "Generated Apple US module committed to tmp/apple-eci61-us-lift-v4-20261105"
