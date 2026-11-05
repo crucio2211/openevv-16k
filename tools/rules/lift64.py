@@ -2386,7 +2386,7 @@ class Rule:
     def lea_is_arithmetic(self, st, text):
         """Whether a lea computes a number rather than an address: an index
         register, or a base that holds a number rather than a place."""
-        if re.match(r"^(-?0x[0-9a-f]+|-?\d+)?\(,%[a-z0-9]+,\d\)$", text):
+        if re.match(r"^(-?0x[0-9a-f]+|-?\d+)?\(,%[a-z0-9]+(?:,\d)?\)$", text):
             return True
         mm = MEM.match(text)
         if not mm or mm.group(2) == "%rip":
@@ -2406,8 +2406,7 @@ class Rule:
         """base + index * scale + displacement, worked out in a scratch local
         so that a destination that is also one of the two is read before it
         is written."""
-        mm = re.match(r"^(-?0x[0-9a-f]+|-?\d+)?\((%[a-z0-9]+)?(?:,(%[a-z0-9]+),"
-                      r"(\d))?\)$", o[0])
+        mm = re.match(r"^(-?0x[0-9a-f]+|-?\d+)?\((%[a-z0-9]+)?(?:,(%[a-z0-9]+)(?:,(\d))?)?\)$", o[0])
         if not mm:
             raise Hole("lea of %s" % o[0])
         disp = int(mm.group(1), 0) if mm.group(1) else 0
@@ -2596,7 +2595,7 @@ class Rule:
             st["stackargs"][p[1]] = v
             return
         if p[0] == "glob" and p[1] < 0x148:
-            return self.machine_store(b, st, lines, a, p[1], w, v)
+            return self.machine_store(b, st, lines, a, p[1], w, v, src)
         if p[0] == "local" and w == 8 and self.record_data(p[1]):
             return self.store_eight(st, lines, p, v, src)
         if p[0] == "through" and w == 8 and p[2] >= 0x10 and \
@@ -2643,11 +2642,16 @@ class Rule:
                  *self.words(v, st, reg_of(src) if src else None))
         self.forget_memory(st, p)
 
-    def machine_store(self, b, st, lines, a, off, w, v):
+    def machine_store(self, b, st, lines, a, off, w, v, src=None):
         """The machine's own registers, written inline: loading the left or
         the right scan pointer. Ours is a call, so the three stores that
         make one become it once all three are seen."""
         inl = st["inline"]
+        # The scan pointer may be in a register whose value has not reached
+        # the data-flow state yet. Keep only that genuinely unknown register;
+        # memory and existing homes are handled by inline_load itself.
+        if off in (0x70, 0x90) and src and src.startswith("%") and v[0] == "X":
+            raise Need(("home", reg_of(src)))
         if off == 0x70:
             inl["lnode"] = v
         elif off == 0x80 and v == ("imm", 0):
@@ -2679,10 +2683,25 @@ class Rule:
             inl.pop("roff", None)
 
     def inline_load(self, st, lines, entry, node):
-        """The cell a pointer register was loaded from: the value it copied
-        sits eight bytes into one, so the cell is eight bytes before it."""
-        if node[0] == "home" and node[2] is not None:
-            node = node[2]
+        """Load a scanner pointer cell.
+
+        6.1 stores its pointer at +8 in a cell; our cell stores it at +4.
+        Globals and existing local cells can be passed by address directly.
+        Where 6.1 kept the cell inside a caller record or a register home,
+        stage the pointer in one synthetic cell with the layout our helper
+        expects, then pass that cell's address.
+        """
+        def staged_cell(value_words):
+            self.apple_pointer_cell = True
+            self.say(st, lines, "set", "cell", "apple_pointer_cell",
+                     "value", "to", *value_words)
+            return ["addr", "apple_pointer_cell"]
+
+        if node[0] == "home":
+            if node[2] is not None:
+                node = node[2]
+            else:
+                cell = staged_cell(["h_" + node[1]])
         if node[0] in ("mem", "stale", "saved"):
             if node[0] != "mem":
                 raise Hole("%s of a value that has moved" % entry)
@@ -2693,13 +2712,16 @@ class Rule:
                 cell = ["addr", self.local_name(p[1] - 8)]
             elif p[0] == "through" and p[1][0] == "param" and p[2] == 8:
                 cell = ["arg", str(p[1][1])]
+            elif p[0] == "through" and p[1][0] in ("home", "param"):
+                ptr = (["h_" + p[1][1]] if p[1][0] == "home"
+                       else ["arg", str(p[1][1])])
+                offset = self.through_offset(p[2], 4)
+                cell = staged_cell(["through", *ptr, "word", str(offset)])
             else:
                 raise Hole("%s from %s" % (entry, p))
-        else:
+        elif node[0] != "home":
             raise Hole("%s of %s" % (entry, node[0]))
         self.say(st, lines, "call", entry, *cell)
-        # Three stores in 6.1, which change no register of the rule's: only
-        # what memory held is no longer known.
         self.forget_memory(st)
 
     def arith(self, b, st, lines, a, m, o):
@@ -2822,6 +2844,15 @@ class Rule:
     SPLIT = {"lpta_loadp_setscan_r": ("lpta_loadp", "setscan_r"),
              "lpta_loadp_setscan_l": ("lpta_loadp", "setscan_l")}
 
+    def is_state(self, value):
+        # The Apple optimizer sometimes keeps the machine-state pointer in
+        # a preserved register's home across a control-flow join.
+        while value is not None and value[0] == "home" and len(value) > 2:
+            if value[2] is None:
+                return False
+            value = value[2]
+        return value is not None and value[0] == "state"
+
     def call(self, b, st, lines, a, o):
         t = o[0]
         regs = st["regs"]
@@ -2871,7 +2902,7 @@ class Rule:
             raise Hole("%s outside the way out" % name)
         at = int(t.split()[0], 16)
         if at in self.m.private:
-            if regs.get("rdi") != ("state",):
+            if not self.is_state(regs.get("rdi")):
                 raise Hole("%s is not handed the state" % name)
             n = self.arity_of_private(at)
             if name == "fence" and n == 0:
@@ -2892,7 +2923,7 @@ class Rule:
                 return
             if name != "fence" or n != 2:
                 raise Hole("a private %s with %d arguments" % (name, n))
-        if regs.get("rdi") != ("state",):
+        if not self.is_state(regs.get("rdi")):
             raise Hole("%s is not handed the state" % name)
         shape = SHAPE.get(name)
         n = shape[0] if shape else self.arity_of(name)
@@ -3141,6 +3172,10 @@ class Rule:
                 "begun": False, "stackargs": {}}
 
     def meet(self, a, b):
+        # Inline scan-pointer loads may span basic blocks. Keep their
+        # partially assembled state only when every incoming path agrees.
+        if a["inline"] != b["inline"]:
+            raise Hole("different inline scan-pointer states meet")
         regs = {}
         for r in set(a["regs"]) | set(b["regs"]):
             x, y = a["regs"].get(r, ("X",)), b["regs"].get(r, ("X",))
@@ -3150,6 +3185,10 @@ class Rule:
                 self.pair_meets.add(r)
             if x == y and x[0] != "X":
                 regs[r] = x
+            elif self.is_state(x) and self.is_state(y):
+                # Both incoming paths carry the same machine-state pointer,
+                # even when it reached this join through different homes.
+                regs[r] = ("state",)
             elif x[0] == "home" and y[0] == "home":
                 regs[r] = ("home", r, None)
             elif r in XMM and r in self.homes and "home" in (x[0], y[0]):
@@ -3169,7 +3208,7 @@ class Rule:
         return {"regs": regs, "fresh": a["fresh"] & b["fresh"],
                 "pushes": a["pushes"] if a["pushes"] == b["pushes"] else [],
                 "cond": a["cond"] if a["cond"] == b["cond"] else None,
-                "said": a["said"], "inline": {}, "slots": slots,
+                "said": a["said"], "inline": dict(a["inline"]), "slots": slots,
                 "begun": True, "stackargs": stackargs}
 
     def pre_exit(self, t):
@@ -3281,6 +3320,8 @@ class Rule:
         idx = self.block_idx[b]
         st["said"] = (b, 0)
         if b in self.exits or b in self.exit_tail:
+            if st["inline"]:
+                raise Hole("an inline scan-pointer load is unfinished at exit")
             return []
         if b in self.dispatch_rest:
             return []
@@ -3290,6 +3331,10 @@ class Rule:
             self.dispatch_state = self.clone(st)
             s = self.clone(st)
             for r in CALLER:
+                # A jump-table dispatch is not a call. Keep the machine-state
+                # pointer in rdi when it survives the dispatch unchanged.
+                if r == "rdi" and self.is_state(s["regs"].get(r)):
+                    continue
                 s["regs"][r] = ("X",)
             if self.depth_reg:
                 s["regs"][self.depth_reg] = ("home", self.depth_reg, None) \
@@ -3348,8 +3393,6 @@ class Rule:
                 self.say_unwind(st, lines)
         for i in idx:
             self.step(b, st, lines, i)
-        if st["inline"]:
-            raise Hole("a scan pointer half loaded")
         last = self.ins[idx[-1]]
         m = last[1]
         nxt = self.ins[idx[-1] + 1][0] if idx[-1] + 1 < len(self.ins) else None
@@ -3654,6 +3697,7 @@ class Rule:
         self.callees = {}
         self.canary = None
         self.scratch = False
+        self.apple_pointer_cell = False
         self.kept = set()
         self.packs = set()
         # What the registers hold where the dispatch begins, which a place it
@@ -3687,8 +3731,8 @@ class Rule:
                     # a round ago: one round more, with nothing new, settles
                     # that or says it never will.
                     if again:
-                        raise Hole("a value that still cannot be named: %s"
-                                   % sorted(needs)[0][0])
+                        raise Hole("a value that still cannot be named: %r; homes=%r"
+                                   % (sorted(needs), sorted(self.homes)))
                     again = True
                     continue
                 again = False
@@ -3715,6 +3759,8 @@ class Rule:
                        % (self.local_name(c),
                           max(8, 4 + self.records[c]) if c in self.records
                           else 8))
+        if self.apple_pointer_cell:
+            out.append("  local apple_pointer_cell bytes 8")
         for off, w in sorted(self.scalars.items(), reverse=True):
             if off == self.canary:
                 continue
@@ -3756,7 +3802,12 @@ class Rule:
 
 
 class Need(Exception):
-    pass
+    def __init__(self, *args):
+        if args and args[0] == ("home", "rdi"):
+            import traceback
+            print("NEED HOME RDI", file=sys.stderr)
+            traceback.print_stack(limit=12, file=sys.stderr)
+        super().__init__(*args)
 
 
 # ---- reports --------------------------------------------------------------
@@ -3794,11 +3845,19 @@ def census(path):
     return 0 if clean == len(names) else 1
 
 
-def one(path, name):
+def one(path, name, owner=None):
     m = Module(path)
     r = Rule(m, name)
-    text = r.lift(lambda off, w: "G%x" % off,
-                  lambda addr, nm, data: "S%x" % addr)
+    if owner:
+        text = r.lift(lambda off, w: str(off),
+                      lambda addr, nm, data:
+                      "eti_null" if nm == "null_str" else nm)
+        if text is not None:
+            first, rest = text.split("\n", 1)
+            text = first + " from " + owner + "\n" + rest
+    else:
+        text = r.lift(lambda off, w: "G%x" % off,
+                      lambda addr, nm, data: "S%x" % addr)
     if text is None:
         print("%s: %s" % (name, "; ".join(r.holes)))
         return 1
@@ -3810,7 +3869,8 @@ def main():
     if len(sys.argv) >= 3 and sys.argv[1] == "census":
         return census(sys.argv[2])
     if len(sys.argv) >= 4 and sys.argv[1] == "rule":
-        return one(sys.argv[2], sys.argv[3])
+        owner = sys.argv[4] if len(sys.argv) >= 5 else None
+        return one(sys.argv[2], sys.argv[3], owner)
     print(__doc__.split("usage:")[1].strip())
     return 2
 
