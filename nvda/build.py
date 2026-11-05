@@ -38,6 +38,10 @@ LIBRARIES = [
 #: a package competing with it.
 ENGINE_DIR = "synthDrivers/openevv_engine"
 
+#: The editable US English dictionary used to generate the tables in eci.dll.
+#: This is source format, not an ECI runtime .dic file.
+DICTIONARY_SOURCE = os.path.join(ROOT, "lang", "enus", "enus.dict")
+
 DEFAULT_TESTED = "2026.3.0"
 
 
@@ -160,6 +164,9 @@ def main():
 
     version = args.version or described()
 
+    if not os.path.isfile(DICTIONARY_SOURCE):
+        die("there is no lang/enus/enus.dict; the built-in English dictionary source is required")
+
     for path, _name in LIBRARIES:
         if not os.path.isfile(path):
             die(
@@ -193,7 +200,13 @@ def main():
         z.write(os.path.join(ADDON, "installTasks.py"), "installTasks.py")
         for path, name in LIBRARIES:
             z.write(path, ENGINE_DIR + "/" + name)
+        z.write(DICTIONARY_SOURCE, ENGINE_DIR + "/enus.dict")
 
+    with zipfile.ZipFile(target, "r") as check:
+        if ENGINE_DIR + "/enus.dict" not in check.namelist():
+            die("the US English dictionary source was not written into the add-on")
+
+    say("included the editable US English dictionary source")
     say("wrote %s, %d bytes" % (target, os.path.getsize(target)))
     return 0
 
