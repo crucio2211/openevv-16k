@@ -20,7 +20,7 @@ jobs:
           sudo apt-get install -y -qq llvm
       - name: Download Apple US module and lift all 6.1 language sources
         env:
-          APPLE_SOURCE_URL: "https://sdmntprseasia.oaiusercontent.com/files/00000000-c558-8207-a5e9-0a94341ed0fd/raw?se=2026-11-05T01%3A05%3A21Z&sp=r&sv=2026-02-06&sr=b&scid=c79f6c27-970c-54e5-a670-c2cebf5c0319&skoid=6fa9748a-b7b2-4b56-a932-8c1417549c47&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-11-05T00%3A21%3A23Z&ske=2026-11-06T00%3A21%3A23Z&sks=b&skv=2026-02-06&sig=8jf%2BhyHy685N0G6vT0%2B4GI2a9WxXebzxestIJpP1NUg%3D"
+          APPLE_SOURCE_URL: "https://sdmntprindiasocentral.oaiusercontent.com/files/00000000-5448-8211-81d3-20b4d19acc11/raw?se=2026-11-05T01%3A14%3A35Z&sp=r&sv=2026-02-06&sr=b&scid=7d89dd3c-06b8-5495-9182-b2a265f0a7c9&skoid=6fa9748a-b7b2-4b56-a932-8c1417549c47&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-11-04T22%3A49%3A04Z&ske=2026-11-05T22%3A49%3A04Z&sks=b&skv=2026-02-06&sig=7VXpUanxI2xXL8bUF5Lojv3wgv/UYMRXuAXa8K2ZuME%3D"
         run: |
           set -euo pipefail
           mkdir -p /tmp/apple-source
@@ -70,5 +70,5 @@ jobs:
           git config user.email "actions@users.noreply.github.com"
           git add lang/enus
           git commit -m "Port Apple ECI 6.1 US English module sources"
-          git push origin HEAD:tmp/apple-eci61-us-lift-v4-20261105
-          echo "Generated Apple US module committed to tmp/apple-eci61-us-lift-v4-20261105"
+          git push origin HEAD:tmp/apple-eci61-us-lift-v5-20261105
+          echo "Generated Apple US module committed to tmp/apple-eci61-us-lift-v5-20261105"
