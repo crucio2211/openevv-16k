@@ -82,6 +82,26 @@ def main(path):
         if dll.eciSetParam(handle, PARAM_INPUT_TYPE, 1) < 0:
             raise RuntimeError("engine refused the input type")
 
+        # English is the default instance, but it must be tested as a speaking
+        # language too. Creating the instance alone does not prove its voice
+        # table or its waveform path works.
+        for voice in range(1, 9):
+            voice_name = ctypes.create_string_buffer(64)
+            dll.eciGetVoiceName(handle, voice, voice_name)
+            if not voice_name.value:
+                raise RuntimeError(
+                    "engine returned an empty name for US English voice %d"
+                    % voice)
+        print("switchlangs: read voices for US English", flush=True)
+        spoken = 0
+        if not dll.eciAddText(handle, b"Hello world."):
+            raise RuntimeError("engine refused text for US English")
+        if not dll.eciSynthesize(handle) or not dll.eciSynchronize(handle):
+            raise RuntimeError("engine failed to synthesize US English")
+        if spoken == 0:
+            raise RuntimeError("US English engine produced no audio")
+        print("switchlangs: US English spoke %d samples" % spoken, flush=True)
+
         for language, (name, sentence) in LANGUAGES.items():
             spoken = 0
             print("switchlangs: selecting " + name, flush=True)
