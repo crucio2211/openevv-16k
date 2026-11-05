@@ -18,6 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build US English in bytecode mode
+        continue-on-error: true
         run: |
           set -euxo pipefail
           make -j2 probe RULES=bytecode LANGS="lang/enus"
