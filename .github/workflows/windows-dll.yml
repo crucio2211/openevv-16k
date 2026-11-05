@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: Checkout tree (patches already migrated in)
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install toolchain
         run: |
@@ -25,9 +27,7 @@ jobs:
         run: |
           set -eux
           # Rebuild the US dictionary only when its editable source changed.
-          # The generated dictionary tables are committed after a successful
-          # build; rebuilding them on unrelated settings commits is not
-          # idempotent because the source and generated table names then differ.
+          # Full history is fetched above so the push's before-SHA is available.
           BASE="${{ github.event.before }}"
           if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
             BASE="$(git rev-parse HEAD^)"
