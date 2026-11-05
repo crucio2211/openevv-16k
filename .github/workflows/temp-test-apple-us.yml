@@ -3,7 +3,7 @@ name: Temporary Apple US module build validation
 on:
   push:
     branches:
-      - tmp/apple-eci61-us-lift-v3-20261105
+      - tmp/apple-eci61-us-lift-v4-20261105
     paths:
       - "lang/enus/**"
       - "tools/rules/**"
