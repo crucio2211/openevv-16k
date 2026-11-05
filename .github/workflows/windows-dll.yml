@@ -23,38 +23,36 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq mingw-w64 python3 zip gdb
 
-      - name: Apply the built-in English pronunciation dictionary
+      - name: Generate and compile the built-in US English dictionary
         run: |
           set -eux
-          # Rebuild the US dictionary only when its editable source changed.
-          # Full history is fetched above so the push's before-SHA is available.
-          BASE="${{ github.event.before }}"
-          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
-            BASE="$(git rev-parse HEAD^)"
-          fi
-          if ! git diff --quiet "$BASE" HEAD -- lang/enus/enus.dict; then
-            # The Apple 6.1 dispatch rules replace several lower IBM switches,
-            # so dictionary edits are applied against the lower dispatch first.
-            EVV_NOTATION_LANG=enus python3 tools/rules/notation.py rewrite
-            EVV_LANG_DIR=lang/enus python3 tools/module/dict.py build
-          else
-            echo "US dictionary source unchanged; keeping committed dictionary tables."
-          fi
-          # Regenerate every runtime table from the authored Apple US data.
-          # The text tables changed with the Apple import; stale generated C
-          # tables can corrupt set/global initialization at runtime.
+          # The notation writer prepares the Apple 6.1 dispatch rules.
+          EVV_NOTATION_LANG=enus python3 tools/rules/notation.py rewrite
+
+          # This writes the base language tables, including delta_sets_enus.c.
+          # It must run BEFORE dict.py build: sets.py write recreates the action
+          # entry arrays that dict.py build patches with the authored enus.dict.
           make tables-write TAGS="enus"
-          # Keep generated runtime tables committed so local builds and CI
-          # use the same Apple US language data.
+
+          # Always compile the source dictionary after the base tables are
+          # regenerated. A changed enus.dict is not the only reason to rebuild:
+          # tables-write itself overwrites the compiled dictionary arrays.
+          EVV_LANG_DIR=lang/enus python3 tools/module/dict.py build
+
+          # Keep every generated table and any rule/action edits made by the
+          # dictionary compiler in sync with the DLL built below.
           git add lang/enus/delta_globals_enus.c \
                   lang/enus/eci_ini_enus.c \
                   lang/enus/delta_link_enus.c \
                   lang/enus/delta_sets_enus.c \
-                  lang/enus/delta_authored_enus.c
+                  lang/enus/delta_consts_enus.c \
+                  lang/enus/delta_authored_enus.c \
+                  lang/enus/enus.dict \
+                  lang/enus/rules
           if ! git diff --cached --quiet; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git commit -m "Regenerate Apple US runtime tables"
+            git commit -m "Compile US dictionary after regenerating runtime tables"
             git push origin HEAD:main
           fi
           # Remove stale generated rule C so the authored Apple rules compile.
