@@ -1,0 +1,50 @@
+name: Windows native engine verification
+
+on:
+  workflow_run:
+    workflows: ["Windows 16kHz DLLs (all languages)"]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  windows-x64:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout the source used by the build
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Set up 64-bit Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          architecture: "x64"
+
+      - name: Download the exact NVDA add-on built by the completed run
+        uses: actions/download-artifact@v4
+        with:
+          name: openevv-nvda-addon-main-${{ github.event.workflow_run.head_sha }}
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: downloaded
+
+      - name: Unpack and test the actual Windows DLL inside the add-on
+        shell: pwsh
+        run: |
+          $package = Get-ChildItem -Path downloaded -Filter "*.nvda-addon" -File | Select-Object -First 1
+          if (-not $package) {
+            throw "The downloaded workflow artifact has no .nvda-addon package."
+          }
+          Copy-Item $package.FullName "openevv-test.zip"
+          Expand-Archive -LiteralPath "openevv-test.zip" -DestinationPath "addon" -Force
+          if (-not (Test-Path "addon/synthDrivers/openevv_engine/eci.dll")) {
+            throw "The packaged 64-bit eci.dll is missing."
+          }
+          python nvda/test/windows.py addon
