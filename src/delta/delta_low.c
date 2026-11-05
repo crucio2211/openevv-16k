@@ -117,22 +117,32 @@ void delta_low_region(const void *at, size_t bytes)
    address is in. */
 void *delta_low_at(const void *p)
 {
-    const unsigned char *c = p;
+    uintptr_t address = (uintptr_t)p;
     int i;
 
     if (p == 0)
         return 0;
 
-    for (i = 0; i < regions; i++)
-        if (c >= region[i].at && c < region[i].at + region[i].bytes)
-            return region[i].copy + (c - region[i].at);
+    /* Compare integer addresses, not unrelated C pointers. Relational
+       comparison of pointers into different objects is undefined in C,
+       and this code must behave identically in the Windows shared build. */
+    for (i = 0; i < regions; i++) {
+        uintptr_t start = (uintptr_t)region[i].at;
+        uintptr_t end = start + region[i].bytes;
+
+        if (address >= start && address < end)
+            return region[i].copy + (size_t)(address - start);
+    }
 
     /* Only now the byte after a store, because an address that is one past the
        end of one store and inside another belongs to the one it is inside, and
        the linker is free to put two stores next to each other. */
-    for (i = 0; i < regions; i++)
-        if (c == region[i].at + region[i].bytes)
+    for (i = 0; i < regions; i++) {
+        uintptr_t start = (uintptr_t)region[i].at;
+
+        if (address == start + region[i].bytes)
             return region[i].copy + region[i].bytes;
+    }
 
     fprintf(stderr, "evv: %p is in the program and in none of the stores"
             " copied out of it\n", p);
@@ -149,17 +159,20 @@ void *delta_low_at(const void *p)
 const char *delta_low_store_of(const void *p)
 {
     static char said[32];
-    const unsigned char *c = p;
+    uintptr_t address = (uintptr_t)p;
     int i;
 
     if (p == 0)
         return 0;
 
-    for (i = 0; i < regions; i++)
-        if (c >= region[i].copy && c < region[i].copy + region[i].bytes) {
+    for (i = 0; i < regions; i++) {
+        uintptr_t start = (uintptr_t)region[i].copy;
+
+        if (address >= start && address < start + region[i].bytes) {
             snprintf(said, sizeof said, "store%d", i);
             return said;
         }
+    }
 
     return 0;
 }
@@ -236,10 +249,10 @@ void delta_syms_bind(void)
         if (!found) {
             fprintf(stderr,
                     "evv: language %s rule_sym[%d/%d]=%p is not in any "
-                    "of %d registered stores\\n",
+                    "of %d registered stores\n",
                     L->tag, i, delta_rule_sym_count, (const void *)p, regions);
             for (j = 0; j < regions; j++) {
-                fprintf(stderr, "evv: store[%d] %p..%p (%lu bytes)\\n",
+                fprintf(stderr, "evv: store[%d] %p..%p (%lu bytes)\n",
                         j, (const void *)region[j].at,
                         (const void *)(region[j].at + region[j].bytes),
                         (unsigned long)region[j].bytes);
