@@ -52,7 +52,7 @@ jobs:
                 lang/enus/delta_rules_shim_enus.c
           make rulecode LANGS="lang/enus"
 
-      - name: Smoke-test Finnish and Brazilian Portuguese language switching
+      - name: Smoke-test US English, Finnish and Brazilian Portuguese speech
         run: |
           set -eux
           LANGS="lang/enus lang/fifi lang/ptbr"
