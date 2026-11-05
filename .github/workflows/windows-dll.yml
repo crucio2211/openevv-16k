@@ -24,8 +24,18 @@ jobs:
       - name: Apply the built-in English pronunciation dictionary
         run: |
           set -eux
-          make rulecode LANGS="lang/enus"
+          # Apply dictionary pronunciation/action edits against the lower IBM
+          # dispatch rules. The authored Apple 6.1 rules replace several of
+          # these switches and are not writable by dict.py's arm editor.
+          EVV_NOTATION_LANG=enus python3 tools/rules/notation.py rewrite
           EVV_LANG_DIR=lang/enus python3 tools/module/dict.py build
+          # Restore the normal authored Apple US rules for the actual build.
+          # notation-rewrite updates the generated files' timestamps, so
+          # remove them to force make rulecode to compile the authored rules.
+          rm -f lang/enus/delta_rules_enus.c \
+                lang/enus/delta_rules_enus.h \
+                lang/enus/delta_rules_shim_enus.c
+          make rulecode LANGS="lang/enus"
 
       - name: Smoke-test Finnish and Brazilian Portuguese language switching
         run: |
