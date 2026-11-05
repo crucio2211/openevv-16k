@@ -21,6 +21,7 @@ so the audio can be held to a hash without a sound card.
 import hashlib
 import os
 import struct
+import subprocess
 import sys
 import types
 
@@ -127,11 +128,72 @@ def install(addon):
     sys.path.insert(0, addon)
 
 
+def word_child(addon, text):
+    """Speak one reported word in a fresh process.
+
+    A native access violation kills this child rather than the whole suite;
+    a native hang is bounded by the parent timeout, so the failing word is
+    visible instead of leaving the Actions job stuck for its full timeout.
+    """
+    install(addon)
+    import synthDrivers._openevv as mod
+
+    engine = mod.Engine(lambda _index: None)
+    engine.open()
+    player = engine.player
+    try:
+        engine.addText(text.encode("utf-8"))
+        engine.synthesize()
+        samples = player.samples()
+        if samples <= 0:
+            print("FAIL %r produced no audio" % text)
+            return 1
+        print("ok   %r produced %d samples" % (text, samples))
+    finally:
+        engine.close()
+    if engine.alive() or player.closed != 1:
+        print("FAIL %r did not shut down cleanly" % text)
+        return 1
+    return 0
+
+
+def check_native_word(addon, text):
+    label = "native word %r survives and speaks" % text
+    try:
+        result = subprocess.run(
+            [sys.executable, os.path.abspath(__file__), addon, "--word", text],
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+    except subprocess.TimeoutExpired:
+        check(label, "timed out after 15 seconds", 0)
+        return
+    if result.returncode:
+        detail = (result.stdout + "\\n" + result.stderr).strip()
+        if detail:
+            note(detail[-1800:])
+        check(label, result.returncode, 0)
+    else:
+        check(label, 0, 0)
+
+
 def main():
     addon = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_ADDON
     if not os.path.isdir(os.path.join(addon, "synthDrivers")):
         raise SystemExit("windows.py: no synthDrivers under %s" % addon)
     print("driving the add-on at %s" % addon)
+
+    dictionary = os.path.join(
+        addon, "synthDrivers", "openevv_engine", "enus.dict"
+    )
+    check("the authored US English dictionary is in the add-on",
+          os.path.isfile(dictionary) and os.path.getsize(dictionary) > 0, True)
+
+    # Isolate native text failures. These are separate processes because an
+    # ECI crash is an access violation, not a Python exception.
+    for text in ("space", "space bar", "the space bar", "spaces", "spacecraft"):
+        check_native_word(addon, text)
 
     install(addon)
     import synthDrivers._openevv as mod
@@ -371,4 +433,6 @@ def main():
 
 
 if __name__ == "__main__":
+    if len(sys.argv) >= 4 and sys.argv[2] == "--word":
+        sys.exit(word_child(sys.argv[1], sys.argv[3]))
     sys.exit(main())
