@@ -36,7 +36,7 @@ jobs:
           # Keep generated runtime tables committed so local builds and CI
           # use the same Apple US language data.
           git add lang/enus/delta_globals_enus.c \
-                  lang/enus/delta_settings_enus.c \
+                  lang/enus/eci_ini_enus.c \
                   lang/enus/delta_link_enus.c \
                   lang/enus/delta_sets_enus.c \
                   lang/enus/delta_authored_enus.c
