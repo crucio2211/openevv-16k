@@ -24,11 +24,22 @@ jobs:
       - name: Apply the built-in English pronunciation dictionary
         run: |
           set -eux
-          # Apply dictionary pronunciation/action edits against the lower IBM
-          # dispatch rules. The authored Apple 6.1 rules replace several of
-          # these switches and are not writable by dict.py's arm editor.
-          EVV_NOTATION_LANG=enus python3 tools/rules/notation.py rewrite
-          EVV_LANG_DIR=lang/enus python3 tools/module/dict.py build
+          # Rebuild the US dictionary only when its editable source changed.
+          # The generated dictionary tables are committed after a successful
+          # build; rebuilding them on unrelated settings commits is not
+          # idempotent because the source and generated table names then differ.
+          BASE="${{ github.event.before }}"
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            BASE="$(git rev-parse HEAD^)"
+          fi
+          if ! git diff --quiet "$BASE" HEAD -- lang/enus/enus.dict; then
+            # The Apple 6.1 dispatch rules replace several lower IBM switches,
+            # so dictionary edits are applied against the lower dispatch first.
+            EVV_NOTATION_LANG=enus python3 tools/rules/notation.py rewrite
+            EVV_LANG_DIR=lang/enus python3 tools/module/dict.py build
+          else
+            echo "US dictionary source unchanged; keeping committed dictionary tables."
+          fi
           # Regenerate every runtime table from the authored Apple US data.
           # The text tables changed with the Apple import; stale generated C
           # tables can corrupt set/global initialization at runtime.
