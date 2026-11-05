@@ -215,8 +215,38 @@ void delta_syms_bind(void)
 
     ref = low_alloc((size_t)delta_rule_sym_count * sizeof *ref,
                     "the symbol table");
-    for (i = 0; i < delta_rule_sym_count; i++)
+    for (i = 0; i < delta_rule_sym_count; i++) {
+        const unsigned char *p = (const unsigned char *)delta_rule_sym[i];
+        uintptr_t address = (uintptr_t)p;
+        int j;
+        int found = 0;
+
+        for (j = 0; j < regions; j++) {
+            uintptr_t start = (uintptr_t)region[j].at;
+            uintptr_t end = start + region[j].bytes;
+            if (address >= start && address < end) {
+                found = 1;
+                break;
+            }
+            if (address == end) {
+                found = 1;
+                break;
+            }
+        }
+        if (!found) {
+            fprintf(stderr,
+                    "evv: language %s rule_sym[%d/%d]=%p is not in any "
+                    "of %d registered stores\\n",
+                    L->tag, i, delta_rule_sym_count, (const void *)p, regions);
+            for (j = 0; j < regions; j++) {
+                fprintf(stderr, "evv: store[%d] %p..%p (%lu bytes)\\n",
+                        j, (const void *)region[j].at,
+                        (const void *)(region[j].at + region[j].bytes),
+                        (unsigned long)region[j].bytes);
+            }
+        }
         ref[i] = EVV_REF(delta_low_at(delta_rule_sym[i]));
+    }
 
     delta_sym_ref = ref;
 }

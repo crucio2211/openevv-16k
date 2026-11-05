@@ -47,4 +47,4 @@ jobs:
           if (-not (Test-Path "addon/synthDrivers/openevv_engine/eci.dll")) {
             throw "The packaged 64-bit eci.dll is missing."
           }
-          python nvda/test/windows.py addon
+          python -u nvda/test/windows.py addon
